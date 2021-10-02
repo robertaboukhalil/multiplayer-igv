@@ -1,13 +1,4 @@
 <!DOCTYPE html>
-<!--
-  THIS IS NOT THE INTERESTING FILE
-
-  This is just some UI code. There's nothing interesting and unique in this file. The interesting
-  thing about this demo is the server side, which is in chat.mjs.
-
-  WARNING: This was written by a systems engineer, not a web developer. It's probably bad.
--->
-
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -171,15 +162,10 @@ p:last-of-type {
 
 </style>
 
-<!--===================================================================================-->
-<!-- The actual HTML. There is not much of it. -->
-
   </head>
   <body>
     <form id="name-form" action="/fake-form-action">
       <input id="name-input" placeholder="your name">
-      <p>This chat runs entirely on the edge, powered by<br>
-        <a href="https://blog.cloudflare.com/introducing-workers-durable-objects" target="_blank">Cloudflare Workers Durable Objects</a></p>
     </form>
     <form id="room-form" action="/fake-form-action">
       <p>Enter a public room:</p>
@@ -246,11 +232,12 @@ function startNameChooser() {
 function startRoomChooser() {
   nameForm.remove();
 
-  if (document.location.hash.length > 1) {
-    roomname = document.location.hash.slice(1);
+  // if (document.location.hash.length > 1) {
+    roomname = "test";
+    // roomname = document.location.hash.slice(1);
     startChat();
     return;
-  }
+  // }
 
   roomForm.addEventListener("submit", event => {
     event.preventDefault();
