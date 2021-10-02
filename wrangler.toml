@@ -1,8 +1,6 @@
-name = "edge-chat-demo"
+name = "igv"
 type = "javascript"
 workers_dev = true
-# Add your account ID here
-account_id = ""
 
 [build.upload]
 format = "modules"
