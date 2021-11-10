@@ -1,69 +1,5 @@
-// This is the Edge Chat Demo Worker, built using Durable Objects!
-
-// ===============================
-// Introduction to Modules
-// ===============================
-//
-// The first thing you might notice, if you are familiar with the Workers platform, is that this
-// Worker is written differently from others you may have seen. It even has a different file
-// extension. The `mjs` extension means this JavaScript is an ES Module, which, among other things,
-// means it has imports and exports. Unlike other Workers, this code doesn't use
-// `addEventListener("fetch", handler)` to register its main HTTP handler; instead, it _exports_
-// a handler, as we'll see below.
-//
-// This is a new way of writing Workers that we expect to introduce more broadly in the future. We
-// like this syntax because it is *composable*: You can take two workers written this way and
-// merge them into one worker, by importing the two Workers' exported handlers yourself, and then
-// exporting a new handler that call into the other Workers as appropriate.
-//
-// This new syntax is required when using Durable Objects, because your Durable Objects are
-// implemented by classes, and those classes need to be exported. The new syntax can be used for
-// writing regular Workers (without Durable Objects) too, but for now, you must be in the Durable
-// Objects beta to be able to use the new syntax, while we work out the quirks.
-//
-// To see an example configuration for uploading module-based Workers, check out the wrangler.toml
-// file or one of our Durable Object templates for Wrangler:
-//   * https://github.com/cloudflare/durable-objects-template
-//   * https://github.com/cloudflare/durable-objects-rollup-esm
-//   * https://github.com/cloudflare/durable-objects-webpack-commonjs
-
-// ===============================
-// Required Environment
-// ===============================
-//
-// This worker, when deployed, must be configured with two environment bindings:
-// * rooms: A Durable Object namespace binding mapped to the ChatRoom class.
-// * limiters: A Durable Object namespace binding mapped to the RateLimiter class.
-//
-// Incidentally, in pre-modules Workers syntax, "bindings" (like KV bindings, secrets, etc.)
-// appeared in your script as global variables, but in the new modules syntax, this is no longer
-// the case. Instead, bindings are now delivered in an "environment object" when an event handler
-// (or Durable Object class constructor) is called. Look for the variable `env` below.
-//
-// We made this change, again, for composability: The global scope is global, but if you want to
-// call into existing code that has different environment requirements, then you need to be able
-// to pass the environment as a parameter instead.
-//
-// Once again, see the wrangler.toml file to understand how the environment is configured.
-
-// =======================================================================================
-// The regular Worker part...
-//
-// This section of the code implements a normal Worker that receives HTTP requests from external
-// clients. This part is stateless.
-
-// With the introduction of modules, we're experimenting with allowing text/data blobs to be
-// uploaded and exposed as synthetic modules. In wrangler.toml we specify a rule that files ending
-// in .html should be uploaded as "Data", equivalent to content-type `application/octet-stream`.
-// So when we import it as `HTML` here, we get the HTML content as an `ArrayBuffer`. This lets us
-// serve our app's static asset without relying on any separate storage. (However, the space
-// available for assets served this way is very limited; larger sites should continue to use Workers
-// KV to serve assets.)
 import HTML from "chat.html";
 
-// `handleErrors()` is a little utility function that can wrap an HTTP request handler in a
-// try/catch and return errors to the client. You probably wouldn't want to use this in production
-// code but it is convenient when debugging and iterating.
 async function handleErrors(request, func) {
   try {
     return await func();
@@ -83,14 +19,6 @@ async function handleErrors(request, func) {
   }
 }
 
-// In modules-syntax workers, we use `export default` to export our script's main event handlers.
-// Here, we export one handler, `fetch`, for receiving HTTP requests. In pre-modules workers, the
-// fetch handler was registered using `addEventHandler("fetch", event => { ... })`; this is just
-// new syntax for essentially the same thing.
-//
-// `fetch` isn't the only handler. If your worker runs on a Cron schedule, it will receive calls
-// to a handler named `scheduled`, which should be exported here in a similar way. We will be
-// adding other handlers for other types of events over time.
 export default {
   async fetch(request, env) {
     return await handleErrors(request, async () => {
@@ -188,10 +116,6 @@ export class ChatRoom {
     this.lastTimestamp = 0;
   }
 
-  // The system will call fetch() whenever an HTTP request is sent to this Object. Such requests
-  // can only be sent from other Worker code, such as the code above; these requests don't come
-  // directly from the internet. In the future, we will support other formats than HTTP for these
-  // communications, but we started with HTTP for its familiarity.
   async fetch(request) {
     return await handleErrors(request, async () => {
       let url = new URL(request.url);
@@ -248,20 +172,7 @@ export class ChatRoom {
     webSocket.addEventListener("message", async msg => {
       try {
         if (session.quit) {
-          // Whoops, when trying to send to this WebSocket in the past, it threw an exception and
-          // we marked it broken. But somehow we got another message? I guess try sending a
-          // close(), which might throw, in which case we'll try to send an error, which will also
-          // throw, and whatever, at least we won't accept the message. (This probably can't
-          // actually happen. This is defensive coding.)
           webSocket.close(1011, "WebSocket broken.");
-          return;
-        }
-
-        // Check if the user is over their rate limit and reject the message if so.
-        if (!limiter.checkLimit()) {
-          webSocket.send(JSON.stringify({
-            error: "Your IP is being rate-limited, please try again later."
-          }));
           return;
         }
 
