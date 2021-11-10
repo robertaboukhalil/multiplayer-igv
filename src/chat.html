@@ -2,13 +2,6 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- <script src="https://cdn.jsdelivr.net/npm/igv@2.10.1/dist/igv.min.js"></script> -->
-    <style>
-      #container {
-        /* `url('data:image/svg+xml;base64,${  btoa(`<svg width="24" height="36" viewBox="0 0 24 36" fill="blue" xmlns="http://www.w3.org/2000/svg"><path d="M 8.553 13.433 L 11.511 19.256 L 9.083 20.717 L 6.176 14.382 L 2.433 17.229 L 2.433 1.544 L 12.79 12.907 L 8.553 13.433 Z"/></svg>`)  }')` */
-        cursor: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMzYiIHZpZXdCb3g9IjAgMCAyNCAzNiIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNIDguNTUzIDEzLjQzMyBMIDExLjUxMSAxOS4yNTYgTCA5LjA4MyAyMC43MTcgTCA2LjE3NiAxNC4zODIgTCAyLjQzMyAxNy4yMjkgTCAyLjQzMyAxLjU0NCBMIDEyLjc5IDEyLjkwNyBMIDguNTUzIDEzLjQzMyBaIi8+PC9zdmc+') 24 36, cell;
-      }
-    </style>
   </head>
   <body>
     <!-- Cursor based on https://github.com/liveblocks/liveblocks/blob/main/examples/javascript-live-cursors/static/index.html -->
@@ -24,232 +17,174 @@
       <path d="M 8.553 13.433 L 11.511 19.256 L 9.083 20.717 L 6.176 14.382 L 2.433 17.229 L 2.433 1.544 L 12.79 12.907 L 8.553 13.433 Z"/>
     </svg>
 
-    <div id="container" style="height:300px; width:300px; border: 1px solid red; overflow-y: scroll">
-      <!-- <div id="igvDiv" style="padding-top: 10px; padding-bottom: 10px; border:1px solid lightgray"></div> -->
-    </div>
+    <!-- Shared container -->
+    <div id="container" style="height:300px; width:300px; border: 1px solid red; overflow-y: scroll"></div>
 
-  <script src="https://unpkg.com/ulid@2.3.0/dist/index.umd.js"></script>
+    <script src="https://unpkg.com/ulid@2.3.0/dist/index.umd.js"></script>
 
-  <script type="text/javascript">
-  let currentWebSocket = null;
-  let username = `${ULID.ulid()}:robert`;
-  let roomname = "test";
-  let hostname = window.location.host;
+    <script type="text/javascript">
+    let currentWebSocket = null;
+    let username = `${ULID.ulid()}:robert`;
+    let roomname = "test";
+    let hostname = window.location.host;
 
-  // Source: https://github.com/d3/d3-scale-chromatic/blob/main/src/categorical/category10.js
-  const COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]
+    // Source: https://github.com/d3/d3-scale-chromatic/blob/main/src/categorical/category10.js
+    const COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]
 
-  
+    
 
-  // ---------------------------------------------------------------------------
-  // WebSocket Management
-  // ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
+    // WebSocket Management
+    // ---------------------------------------------------------------------------
 
-  function join() {
-    let ws = new WebSocket("wss://" + hostname + "/api/room/" + roomname + "/websocket");
-    let rejoined = false;
-    let startTime = Date.now();
+    function join() {
+      let ws = new WebSocket("wss://" + hostname + "/api/room/" + roomname + "/websocket");
+      let rejoined = false;
+      let startTime = Date.now();
 
-    let rejoin = async () => {
-      if (!rejoined) {
-        rejoined = true;
-        currentWebSocket = null;
+      let rejoin = async () => {
+        if (!rejoined) {
+          rejoined = true;
+          currentWebSocket = null;
 
-        // Don't try to reconnect too rapidly.
-        let timeSinceLastJoin = Date.now() - startTime;
-        if (timeSinceLastJoin < 1000)
-          await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastJoin));
-        join();
-      }
-    }
-
-    // When open connection, send user's name
-    ws.addEventListener("open", event => {
-      currentWebSocket = ws;
-      ws.send(JSON.stringify({ name: username }));
-    });
-
-    // Process incoming messages
-    ws.addEventListener("message", event => {
-      let data = JSON.parse(event.data);
-
-      if (data.error) {
-        addChatMessage(null);
-        console.error("ERROR:", data.error)
-      } else if (data.joined) {
-        console.warn("JOINED", data);
-      } else if (data.quit) {
-        console.warn("QUIT", data);
-        let cursor = document.getElementById(`cursor-${data.quit}`);
-        if (cursor != null) {
-          cursor.remove()
+          // Don't try to reconnect too rapidly.
+          let timeSinceLastJoin = Date.now() - startTime;
+          if (timeSinceLastJoin < 1000)
+            await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastJoin));
+          join();
         }
-      } else if (data.ready) {
-        console.log("Ready.")
-      } else {
-        addChatMessage(data);
       }
+
+      // When open connection, send user's name
+      ws.addEventListener("open", event => {
+        currentWebSocket = ws;
+        ws.send(JSON.stringify({ name: username }));
+      });
+
+      // Process incoming messages
+      ws.addEventListener("message", event => {
+        let data = JSON.parse(event.data);
+
+        if (data.error) {
+          addChatMessage(null);
+          console.error("ERROR:", data.error)
+        } else if (data.joined) {
+          console.warn("JOINED", data);
+        } else if (data.quit) {
+          console.warn("QUIT", data);
+          let cursor = document.getElementById(`cursor-${data.quit}`);
+          if (cursor != null) {
+            cursor.remove()
+          }
+        } else if (data.ready) {
+          console.log("Ready.")
+        } else {
+          addChatMessage(data);
+        }
+      });
+
+      ws.addEventListener("close", event => {
+        console.log("WebSocket closed, reconnecting:", event.code, event.reason);
+        rejoin();
+      });
+      ws.addEventListener("error", event => {
+        console.log("WebSocket error, reconnecting:", event);
+        rejoin();
+      });
+    }
+
+    // ---------------------------------------------------------------------------
+    // Update cursors
+    // ---------------------------------------------------------------------------
+
+    function addChatMessage(data) {
+      if(data.name === username)
+        return;
+
+      let cursor = document.getElementById(`cursor-${data.name}`);
+      if (cursor == null) {
+        cursor = document.getElementById("cursor-template").cloneNode(true);
+        cursor.id = `cursor-${data.name}`;
+        cursor.style.fill = getColor(data.name);
+        document.body.appendChild(cursor);
+      }
+
+      if(data.cursor.x != null && data.cursor.y != null) {
+        cursor.style.transform = `translateX(${data.cursor.x}px) translateY(${data.cursor.y}px)`;
+        cursor.style.opacity = "1";
+      } else {
+        cursor.style.opacity = "0";
+      }
+    }
+
+
+    // ---------------------------------------------------------------------------
+    // Utilities
+    // ---------------------------------------------------------------------------
+
+    // Generate a color from a user ID
+    function getColor(user) {
+      return COLORS[Math.abs(user.hash()) % COLORS.length]
+    }
+
+    // Debounce. Source: https://github.com/m-gagne/limit.js/blob/master/limit.js
+    Function.prototype.debounce = function(milliseconds, context) {
+        var baseFunction = this, timer = null, wait = milliseconds;
+        return function () {
+            var self = context || this, args = arguments;
+            function complete() { baseFunction.apply(self, args); timer = null; }
+            if(timer)
+                clearTimeout(timer);
+            timer = setTimeout(complete, wait);
+        };
+    };
+
+    // Hashing function. Source: https://stackoverflow.com/a/7616484
+    String.prototype.hash = function() {
+      var hash = 0, i, chr;
+      if (this.length === 0) return hash;
+      for (i = 0; i < this.length; i++) {
+        chr   = this.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return hash;
+    };
+
+
+    // ---------------------------------------------------------------------------
+    // Event handlers
+    // ---------------------------------------------------------------------------
+
+    // On page load
+    document.addEventListener("DOMContentLoaded", function () {
+      join();
     });
 
-    ws.addEventListener("close", event => {
-      console.log("WebSocket closed, reconnecting:", event.code, event.reason);
-      rejoin();
+    // When user moves their pointer
+    document.getElementById("container").addEventListener("pointermove", function (e) {
+      let x = e.clientX, y = e.clientY;
+      // Detect going outside the container
+      // TODO: use container's actual size
+      if(x > 300 || y > 300) {
+        x = null;
+        y = null;
+      }
+      currentWebSocket.send(JSON.stringify({ cursor: { x, y } }));
+    }.debounce(10));
+
+    // When user leaves container area
+    document.getElementById("container").addEventListener("pointerleave", function (e) {
+      let x = e.clientX, y = e.clientY;
+      // TODO: user container's actual size
+      if(x <= 300 || y <= 300)
+        return
+      currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
+    }.debounce(10));
+
+    // When leave or refresh page
+    document.addEventListener("unload", function(e){
+      currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
     });
-    ws.addEventListener("error", event => {
-      console.log("WebSocket error, reconnecting:", event);
-      rejoin();
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Update cursors
-  // ---------------------------------------------------------------------------
-
-  function addChatMessage(data) {
-    if(data.name === username)
-      return;
-
-    let cursor = document.getElementById(`cursor-${data.name}`);
-    if (cursor == null) {
-      cursor = document.getElementById("cursor-template").cloneNode(true);
-      cursor.id = `cursor-${data.name}`;
-      cursor.style.fill = getColor(data.name);
-      document.body.appendChild(cursor);
-    }
-
-    if (data.cursor.x != null && data.cursor.y != null) {
-      cursor.style.transform = `translateX(${data.cursor.x}px) translateY(${data.cursor.y}px)`;
-      cursor.style.opacity = "1";
-    } else {
-      cursor.style.opacity = "0";
-    }
-  }
-
-  // On page load
-  document.addEventListener("DOMContentLoaded", function () {
-    join();
-  });
-
-  // Utility function to generate color from user ID
-  function getColor(user) {
-    return COLORS[Math.abs(user.hash()) % COLORS.length]
-  }
-
-  // ---------------------------------------------------------------------------
-  // IGV
-  // ---------------------------------------------------------------------------
-  // // Load IGV
-  // document.addEventListener("DOMContentLoaded", function () {
-  //   var options =
-  //       {
-  //           // Example of fully specifying a reference .  We could alternatively use  "genome: 'hg19'"
-  //           reference: {
-  //               id: "hg19",
-  //               fastaURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/1kg_v37/human_g1k_v37_decoy.fasta",
-  //               cytobandURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/b37/b37_cytoband.txt"
-  //           },
-  //           locus: "8:128,750,948-128,751,025",
-  //           tracks:
-  //               [
-  //                   {
-  //                       name: "Phase 3 WGS variants",
-  //                       type: "variant",
-  //                       format: "vcf",
-  //                       url: "https://s3.amazonaws.com/1000genomes/release/20130502/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz",
-  //                       indexURL: "https://s3.amazonaws.com/1000genomes/release/20130502/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5b.20130502.sites.vcf.gz.tbi"
-  //                   },
-  //                   {
-  //                       type: 'alignment',
-  //                       format: 'cram',
-  //                       url: 'https://s3.amazonaws.com/1000genomes/phase3/data/HG00096/exome_alignment/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam.cram',
-  //                       indexURL: 'https://s3.amazonaws.com/1000genomes/phase3/data/HG00096/exome_alignment/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam.cram.crai',
-  //                       name: 'HG00096',
-  //                       sort: {
-  //                           chr: "chr8",
-  //                           position: 128750986,
-  //                           option: "BASE",
-  //                           direction: "ASC"
-  //                       },
-  //                       height: 600
-  //                   },
-  //                   // {
-  //                   //     name: "Genes",
-  //                   //     type: "annotation",
-  //                   //     format: "bed",
-  //                   //     url: "https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/genes/refGene.hg19.bed.gz",
-  //                   //     indexURL: "https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/genes/refGene.hg19.bed.gz.tbi",
-  //                   //     order: Number.MAX_VALUE,
-  //                   //     visibilityWindow: 300000000,
-  //                   //     displayMode: "EXPANDED"
-  //                   // }
-  //               ]
-  //       };
-  //   var igvDiv = document.getElementById("igvDiv");
-  //   igv.createBrowser(igvDiv, options)
-  //       .then(function (browser) {
-  //           console.log("Created IGV browser");
-  //       })
-  // })
-
-
-
-  // ---------------------------------------------------------------------------
-  // Utilities
-  // ---------------------------------------------------------------------------
-
-  // Debounce. Source: https://github.com/m-gagne/limit.js/blob/master/limit.js
-  Function.prototype.debounce = function(milliseconds, context) {
-      var baseFunction = this, timer = null, wait = milliseconds;
-      return function () {
-          var self = context || this, args = arguments;
-          function complete() { baseFunction.apply(self, args); timer = null; }
-          if(timer)
-              clearTimeout(timer);
-          timer = setTimeout(complete, wait);
-      };
-  };
-
-  // Hashing function. Source: https://stackoverflow.com/a/7616484
-  String.prototype.hash = function() {
-    var hash = 0, i, chr;
-    if (this.length === 0) return hash;
-    for (i = 0; i < this.length; i++) {
-      chr   = this.charCodeAt(i);
-      hash  = ((hash << 5) - hash) + chr;
-      hash |= 0; // Convert to 32bit integer
-    }
-    return hash;
-  };
-
-  
-  // ---------------------------------------------------------------------------
-  // Event handlers
-  // ---------------------------------------------------------------------------
-  
-  // When user moves their pointer
-  document.getElementById("container").addEventListener("pointermove", function (e) {
-    let x = e.clientX, y = e.clientY;
-    // Detect going outside the container
-    // TODO: use container's actual size
-    if(x > 300 || y > 300) {
-      x = null;
-      y = null;
-    }
-    currentWebSocket.send(JSON.stringify({ cursor: { x, y } }));
-  }.debounce(10));
-
-  // When user leaves container area
-  document.getElementById("container").addEventListener("pointerleave", function (e) {
-    let x = e.clientX, y = e.clientY;
-    // TODO: user container's actual size
-    if(x <= 300 || y <= 300)
-      return
-    currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
-  }.debounce(10));
-
-  // When leave or refresh page
-  document.addEventListener("unload", function(e){
-    currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
-  });
-  </script>
+    </script>
 </html>
