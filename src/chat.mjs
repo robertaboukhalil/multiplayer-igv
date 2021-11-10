@@ -359,6 +359,24 @@ export class ChatRoom {
 
           webSocket.send(JSON.stringify({ready: true}));
 
+      // Clean up old users
+      let storage = await this.storage.list({ start: "cursor:", reverse: true, limit: 100 });
+      let users = [...storage.keys()];
+      let toDelete = [];
+      for(let user of users) {
+        try {
+          if(new Date() - new Date(decodeTime(user.split(":")[1])) > 100000)
+            toDelete.push(user);
+        } catch (error) {
+            toDelete.push(user);
+        }
+      }
+      // webSocket.send(JSON.stringify({error: toDelete}));
+      if(toDelete.length > 0)
+        await this.storage.delete(toDelete);
+
+
+
           // Note that we've now received the user info message.
           receivedUserInfo = true;
 
