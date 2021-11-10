@@ -219,6 +219,10 @@ document.getElementById("container").addEventListener("pointermove", function (e
   currentWebSocket.send(JSON.stringify({ cursor: { x, y } }));
 }.debounce(10));
 
+document.getElementById("container").addEventListener("pointerleave", function (e) {
+  currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
+}.debounce(10));
+
 document.addEventListener("unload", function(e){
   currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
 });
