@@ -215,12 +215,18 @@
   ////////
 
 
+  let prevX = 0, prevY = 0;
   document.getElementById("container").addEventListener("pointermove", function (e) {
     let x = e.clientX, y = e.clientY;
     if(x > 300 || y > 300) {
+      console.log("pointermove OUTSIDE")
       x = null;
       y = null;
     }
+
+    // if(Math.abs(x - prevX) < 1 || Math.abs(y - prevY) < 1)
+    //   return;
+
     currentWebSocket.send(JSON.stringify({ cursor: { x, y } }));
 
     addChatMessage({
