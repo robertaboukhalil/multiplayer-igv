@@ -30,8 +30,11 @@
   let username = `${ULID.ulid()}:robert`;
   let roomname = "test";
   let hostname = window.location.host;
-  let lastSeenTimestamp = 0;
 
+  // Source: https://github.com/d3/d3-scale-chromatic/blob/main/src/categorical/category10.js
+  const COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]
+
+  // Join websocket
   function join() {
     let ws = new WebSocket("wss://" + hostname + "/api/room/" + roomname + "/websocket");
     let rejoined = false;
@@ -103,14 +106,13 @@
   function addChatMessage(data) {
     if(data.name === username)
       return;
-    console.log("add/update cursor", data);
+    // console.log("add/update cursor", data);
 
     let cursor = document.getElementById(`cursor-${data.name}`);
     if (cursor == null) {
       cursor = document.getElementById("cursor-template").cloneNode(true);
       cursor.id = `cursor-${data.name}`;
-      // cursor.style.fill = COLORS[connectionId % COLORS.length];
-      cursor.style.fill = "black";
+      cursor.style.fill = COLORS[Math.abs(data.name.hash()) % COLORS.length];
       document.body.appendChild(cursor);
     }
 
@@ -127,6 +129,18 @@
   document.addEventListener("DOMContentLoaded", function () {
     join();
   });
+
+  // Source: https://stackoverflow.com/a/7616484
+  String.prototype.hash = function() {
+    var hash = 0, i, chr;
+    if (this.length === 0) return hash;
+    for (i = 0; i < this.length; i++) {
+      chr   = this.charCodeAt(i);
+      hash  = ((hash << 5) - hash) + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return hash;
+  };
 
 
 
