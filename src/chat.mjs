@@ -152,8 +152,8 @@ export class ChatRoom {
       }
     });
 
-    // Load the last 100 messages from the chat history stored on disk, and send them to the client.
-    let storage = await this.storage.list({reverse: true, limit: 100});
+    // TODO:
+    let storage = await this.storage.list({ start: "cursor:", reverse: true, limit: 100 });
     let backlog = [...storage.values()];
     backlog.reverse();
     backlog.forEach(value => {
@@ -202,6 +202,17 @@ export class ChatRoom {
           return;
         }
 
+        if(data.cursor != null) {
+          // Broadcast the message to all other WebSockets.
+          let dataStr = JSON.stringify({
+            name: session.name,
+            ...data
+          });
+          this.broadcast(dataStr);
+          await this.storage.put(`cursor:${session.name}`, dataStr);
+          return
+        }
+
         // Construct sanitized message for storage and broadcast.
         data = { name: session.name, message: "" + data.message };
 
@@ -224,7 +235,7 @@ export class ChatRoom {
 
         // Save message.
         let key = new Date(data.timestamp).toISOString();
-        await this.storage.put(key, dataStr);
+        await this.storage.put(`message:${key}`, dataStr);
       } catch (err) {
         // Report any exceptions directly back to the client. As with our handleErrors() this
         // probably isn't what you'd want to do in production, but it's convenient when testing.
