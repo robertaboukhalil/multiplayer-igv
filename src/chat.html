@@ -6,16 +6,37 @@
   </head>
   <body>
 
+    <!-- <div id="cursor-template">X</div> -->
+    <svg
+      id="cursor-template"
+      style="
+        position: absolute;
+        left: 0;
+        top: 0;
+        transition: transform 0.3s cubic-bezier(0.17, 0.93, 0.38, 1);
+      "
+      width="24"
+      height="36"
+      viewBox="0 0 24 36"
+      fill="transparent"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19841L11.7841 12.3673H5.65376Z"
+      />
+    </svg>
 
-    <div style="height:70vh; border: 1px solid red; overflow-y: scroll">
-      <div id="igvDiv" style="padding-top: 10px; padding-bottom: 10px; border:1px solid lightgray"></div>
+
+    <div id="container" style="height:300px; width:300px; border: 1px solid red; overflow-y: scroll">
+      <!-- <div id="igvDiv" style="padding-top: 10px; padding-bottom: 10px; border:1px solid lightgray"></div> -->
     </div>
 
 
+<script src="https://unpkg.com/ulid@2.3.0/dist/index.umd.js"></script>
 
 <script type="text/javascript">
 let currentWebSocket = null;
-let username = "robert";
+let username = `${ULID.ulid()}:robert`;
 let roomname = "test";
 let hostname = window.location.host;
 let lastSeenTimestamp = 0;
@@ -32,9 +53,8 @@ function join() {
 
       // Don't try to reconnect too rapidly.
       let timeSinceLastJoin = Date.now() - startTime;
-      if (timeSinceLastJoin < 10000) {
-        // Less than 10 seconds elapsed since last join. Pause a bit.
-        await new Promise(resolve => setTimeout(resolve, 10000 - timeSinceLastJoin));
+      if (timeSinceLastJoin < 1000) {
+        await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastJoin));
       }
 
       // OK, reconnect now!
@@ -53,11 +73,18 @@ function join() {
     let data = JSON.parse(event.data);
 
     if (data.error) {
-      addChatMessage(null, "* Error: " + data.error);
+      addChatMessage(null);
+      console.log("ERROR")
+      console.error(data.error)
     } else if (data.joined) {
       console.warn("JOINED", data);
     } else if (data.quit) {
       console.warn("QUIT", data);
+      let cursor = document.getElementById(`cursor-${data.quit}`);
+      if (cursor != null) {
+        cursor.remove()
+      }
+
     } else if (data.ready) {
       // // All pre-join messages have been delivered.
       // if (!wroteWelcomeMessages) {
@@ -83,10 +110,32 @@ function join() {
 }
 
 function addChatMessage(data) {
-  console.log("addChatMessage", data);
+  if(data.name === username)
+    return;
+  console.log("add/update cursor", data);
+
+  let cursor = document.getElementById(`cursor-${data.name}`);
+  if (cursor == null) {
+    cursor = document.getElementById("cursor-template").cloneNode(true);
+    cursor.id = `cursor-${data.name}`;
+    // cursor.style.fill = COLORS[connectionId % COLORS.length];
+    cursor.style.fill = "black";
+    document.body.appendChild(cursor);
+  }
+
+  if (data.cursor.x != null && data.cursor.y != null) {
+    cursor.style.transform = `translateX(${data.cursor.x}px) translateY(${data.cursor.y}px)`;
+    cursor.style.opacity = "1";
+  } else {
+    cursor.style.opacity = "0";
+  }
+
 }
 
-join();
+
+document.addEventListener("DOMContentLoaded", function () {
+  join();
+});
 
 
 
@@ -146,17 +195,36 @@ join();
 // })
 
 
-document.addEventListener("pointermove", (e) => {
-  // room.updatePresence({ cursor: { x: e.clientX, y: e.clientY } });
+
+///////// https://github.com/m-gagne/limit.js/blob/master/limit.js
+Function.prototype.debounce = function(milliseconds, context) {
+    var baseFunction = this, timer = null, wait = milliseconds;
+    return function () {
+        var self = context || this, args = arguments;
+        function complete() { baseFunction.apply(self, args); timer = null; }
+        if(timer)
+            clearTimeout(timer);
+        timer = setTimeout(complete, wait);
+    };
+};
+////////
+
+
+document.getElementById("container").addEventListener("pointermove", function (e) {
   currentWebSocket.send(JSON.stringify({ cursor: { x: e.clientX, y: e.clientY } }));
+}.debounce(10));
 
+// document.getElementById("container").addEventListener("pointerleave", function (e) {
+//   console.log("LEAVE")
+//   // room.updatePresence({ cursor: null });
+//   // currentWebSocket.send(JSON.stringify({ cursor: { x: e.clientX, y: e.clientY } }));
+//   currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
+// });  //.debounce(50)
+
+document.addEventListener("unload", function(e){
+  currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
 });
 
-document.addEventListener("pointerleave", (e) => {
-  // room.updatePresence({ cursor: null });
-  // currentWebSocket.send(JSON.stringify({ cursor: { x: e.clientX, y: e.clientY } }));
-
-});
 
 </script>
 </html>
