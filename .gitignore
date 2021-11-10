@@ -1,2 +1,4 @@
-credentials.conf
-metadata.json
+dist/
+worker/
+node_modules/
+
