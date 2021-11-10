@@ -384,16 +384,17 @@ export class ChatRoom {
         }
 
         if(data.cursor != null) {
-          if(data.cursor.x === null || data.cursor.y === null) {
-            await this.storage.delete(`cursor:${session.name}`);
-            return
-          }
-          
-          // Broadcast the message to all other WebSockets.
           let dataStr = JSON.stringify({
             name: session.name,
             ...data
           });
+          if(data.cursor.x === null || data.cursor.y === null) {
+            await this.storage.delete(`cursor:${session.name}`);
+            this.broadcast(dataStr);
+            return;
+          }
+          
+          // Broadcast the message to all other WebSockets.
           this.broadcast(dataStr);
           await this.storage.put(`cursor:${session.name}`, dataStr);
           return

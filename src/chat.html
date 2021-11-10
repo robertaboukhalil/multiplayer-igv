@@ -211,20 +211,16 @@ Function.prototype.debounce = function(milliseconds, context) {
 
 
 document.getElementById("container").addEventListener("pointermove", function (e) {
-  currentWebSocket.send(JSON.stringify({ cursor: { x: e.clientX, y: e.clientY } }));
+  let x = e.clientX, y = e.clientY;
+  if(x > 300 || y > 300) {
+    x = null;
+    y = null;
+  }
+  currentWebSocket.send(JSON.stringify({ cursor: { x, y } }));
 }.debounce(10));
-
-// document.getElementById("container").addEventListener("pointerleave", function (e) {
-//   console.log("LEAVE")
-//   // room.updatePresence({ cursor: null });
-//   // currentWebSocket.send(JSON.stringify({ cursor: { x: e.clientX, y: e.clientY } }));
-//   currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
-// });  //.debounce(50)
 
 document.addEventListener("unload", function(e){
   currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
 });
-
-
 </script>
 </html>
