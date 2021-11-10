@@ -103,8 +103,8 @@
     });
   }
 
-  function addChatMessage(data) {
-    if(data.name === username)
+  function addChatMessage(data, doit=false) {
+    if(data.name === username && doit === false)
       return;
     // console.log("add/update cursor", data);
 
@@ -222,9 +222,21 @@
       y = null;
     }
     currentWebSocket.send(JSON.stringify({ cursor: { x, y } }));
+
+    addChatMessage({
+      name: username,
+      cursor: { x, y }
+    }, true)
+
+    prevX = x;
+    prevY = y;
   }.debounce(10));
 
   document.getElementById("container").addEventListener("pointerleave", function (e) {
+    let x = e.clientX, y = e.clientY;
+    if(x <= 300 || y <= 300)
+      return
+    console.log("pointerleave")
     currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
   }.debounce(10));
 
