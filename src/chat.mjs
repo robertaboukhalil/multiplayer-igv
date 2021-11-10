@@ -263,20 +263,10 @@ async function handleApiRequest(path, request, env) {
 // to all others.
 export class ChatRoom {
   constructor(controller, env) {
-    // `controller.storage` provides access to our durable storage. It provides a simple KV get()/put() interface.
-    this.storage = controller.storage;
-
-    // `env` is our environment bindings (discussed earlier).
-    this.env = env;
-
-    // We will put the WebSocket objects for each client, along with some metadata, into `sessions`.
-    this.sessions = [];
-
-    // We keep track of the last-seen message's timestamp just so that we can assign monotonically
-    // increasing timestamps even if multiple messages arrive simultaneously (see below). There's
-    // no need to store this to disk since we assume if the object is destroyed and recreated, much
-    // more than a millisecond will have gone by.
-    this.lastTimestamp = 0;
+    this.storage = controller.storage;  // Durable storage
+    this.env = env;                     // Environment bindings, e.g. KV namespaces, secrets
+    this.sessions = [];                 // WebSocket sessions
+    this.locus = "chr3:1000000-1100000";// Genomic region // TODO:
   }
 
   async fetch(request) {
@@ -286,9 +276,8 @@ export class ChatRoom {
       switch (url.pathname) {
         case "/websocket": {
           // The request is to `/api/room/<name>/websocket`. A client is trying to establish a new WebSocket session.
-          if (request.headers.get("Upgrade") != "websocket") {
+          if (request.headers.get("Upgrade") != "websocket")
             return new Response("expected websocket", {status: 400});
-          }
           let pair = new WebSocketPair();
           await this.handleSession(pair[1]);
           return new Response(null, { status: 101, webSocket: pair[0] });
@@ -356,16 +345,16 @@ export class ChatRoom {
 
           // Broadcast to all other connections that this user has joined.
           this.broadcast({joined: session.name});
-
           webSocket.send(JSON.stringify({ready: true}));
 
       // // TODO: Clean up old users
+      // TODO: use timestamp value, not from ULID...
       // let storage = await this.storage.list({ start: "cursor:", reverse: true, limit: 100 });
       // let users = [...storage.keys()];
       // let toDelete = [];
       // for(let user of users) {
       //   try {
-      //     if(new Date() - new Date(decodeTime(user.split(":")[1])) > 100000)
+      //     if(new Date() - new Date(decodeTime(user.split(":")[1])) > 1000000)
       //       toDelete.push(user);
       //   } catch (error) {
       //       toDelete.push(user);
@@ -400,29 +389,29 @@ export class ChatRoom {
           return
         }
 
-        // Construct sanitized message for storage and broadcast.
-        data = { name: session.name, message: "" + data.message };
+        // // Construct sanitized message for storage and broadcast.
+        // data = { name: session.name, message: "" + data.message };
 
-        // Block people from sending overly long messages. This is also enforced on the client,
-        // so to trigger this the user must be bypassing the client code.
-        if (data.message.length > 256) {
-          webSocket.send(JSON.stringify({error: "Message too long."}));
-          return;
-        }
+        // // Block people from sending overly long messages. This is also enforced on the client,
+        // // so to trigger this the user must be bypassing the client code.
+        // if (data.message.length > 256) {
+        //   webSocket.send(JSON.stringify({error: "Message too long."}));
+        //   return;
+        // }
 
-        // Add timestamp. Here's where this.lastTimestamp comes in -- if we receive a bunch of
-        // messages at the same time (or if the clock somehow goes backwards????), we'll assign
-        // them sequential timestamps, so at least the ordering is maintained.
-        data.timestamp = Math.max(Date.now(), this.lastTimestamp + 1);
-        this.lastTimestamp = data.timestamp;
+        // // Add timestamp. Here's where this.lastTimestamp comes in -- if we receive a bunch of
+        // // messages at the same time (or if the clock somehow goes backwards????), we'll assign
+        // // them sequential timestamps, so at least the ordering is maintained.
+        // data.timestamp = Math.max(Date.now(), this.lastTimestamp + 1);
+        // this.lastTimestamp = data.timestamp;
 
-        // Broadcast the message to all other WebSockets.
-        let dataStr = JSON.stringify(data);
-        this.broadcast(dataStr);
+        // // Broadcast the message to all other WebSockets.
+        // let dataStr = JSON.stringify(data);
+        // this.broadcast(dataStr);
 
-        // Save message.
-        let key = new Date(data.timestamp).toISOString();
-        await this.storage.put(`message:${key}`, dataStr);
+        // // Save message.
+        // let key = new Date(data.timestamp).toISOString();
+        // await this.storage.put(`message:${key}`, dataStr);
       } catch (err) {
         // Report any exceptions directly back to the client. As with our handleErrors() this
         // probably isn't what you'd want to do in production, but it's convenient when testing.
@@ -431,8 +420,6 @@ export class ChatRoom {
     });
 
     // On "close" and "error" events, remove the WebSocket from the sessions list and broadcast
-    // a quit message.
-
     let closeOrErrorHandler = async evt => {
       session.quit = true;
       this.sessions = this.sessions.filter(member => member !== session);
