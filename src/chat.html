@@ -3,9 +3,14 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <!-- <script src="https://cdn.jsdelivr.net/npm/igv@2.10.1/dist/igv.min.js"></script> -->
+    <style>
+      #container {
+        /* `url('data:image/svg+xml;base64,${  btoa(`<svg width="24" height="36" viewBox="0 0 24 36" fill="blue" xmlns="http://www.w3.org/2000/svg"><path d="M 8.553 13.433 L 11.511 19.256 L 9.083 20.717 L 6.176 14.382 L 2.433 17.229 L 2.433 1.544 L 12.79 12.907 L 8.553 13.433 Z"/></svg>`)  }')` */
+        cursor: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMzYiIHZpZXdCb3g9IjAgMCAyNCAzNiIgZmlsbD0iYmx1ZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNIDguNTUzIDEzLjQzMyBMIDExLjUxMSAxOS4yNTYgTCA5LjA4MyAyMC43MTcgTCA2LjE3NiAxNC4zODIgTCAyLjQzMyAxNy4yMjkgTCAyLjQzMyAxLjU0NCBMIDEyLjc5IDEyLjkwNyBMIDguNTUzIDEzLjQzMyBaIi8+PC9zdmc+') 24 36, cell;
+      }
+    </style>
   </head>
   <body>
-
     <!-- Cursor based on https://github.com/liveblocks/liveblocks/blob/main/examples/javascript-live-cursors/static/index.html -->
     <svg
       id="cursor-template"
@@ -34,7 +39,12 @@
   // Source: https://github.com/d3/d3-scale-chromatic/blob/main/src/categorical/category10.js
   const COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]
 
-  // Join websocket
+  
+
+  // ---------------------------------------------------------------------------
+  // WebSocket Management
+  // ---------------------------------------------------------------------------
+
   function join() {
     let ws = new WebSocket("wss://" + hostname + "/api/room/" + roomname + "/websocket");
     let rejoined = false;
@@ -47,29 +57,25 @@
 
         // Don't try to reconnect too rapidly.
         let timeSinceLastJoin = Date.now() - startTime;
-        if (timeSinceLastJoin < 1000) {
+        if (timeSinceLastJoin < 1000)
           await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastJoin));
-        }
-
-        // OK, reconnect now!
         join();
       }
     }
 
+    // When open connection, send user's name
     ws.addEventListener("open", event => {
       currentWebSocket = ws;
-
-      // Send user info message.
       ws.send(JSON.stringify({ name: username }));
     });
 
+    // Process incoming messages
     ws.addEventListener("message", event => {
       let data = JSON.parse(event.data);
 
       if (data.error) {
         addChatMessage(null);
-        console.log("ERROR")
-        console.error(data.error)
+        console.error("ERROR:", data.error)
       } else if (data.joined) {
         console.warn("JOINED", data);
       } else if (data.quit) {
@@ -78,18 +84,10 @@
         if (cursor != null) {
           cursor.remove()
         }
-
       } else if (data.ready) {
-        // // All pre-join messages have been delivered.
-        // if (!wroteWelcomeMessages) {
-        //   wroteWelcomeMessages = true;
-        // }
+        console.log("Ready.")
       } else {
         addChatMessage(data);
-        // // A regular chat message.
-        // if (data.timestamp > lastSeenTimestamp) {
-        //   lastSeenTimestamp = data.timestamp;
-        // }
       }
     });
 
@@ -103,16 +101,19 @@
     });
   }
 
-  function addChatMessage(data, doit=false) {
-    if(data.name === username && doit === false)
+  // ---------------------------------------------------------------------------
+  // Update cursors
+  // ---------------------------------------------------------------------------
+
+  function addChatMessage(data) {
+    if(data.name === username)
       return;
-    // console.log("add/update cursor", data);
 
     let cursor = document.getElementById(`cursor-${data.name}`);
     if (cursor == null) {
       cursor = document.getElementById("cursor-template").cloneNode(true);
       cursor.id = `cursor-${data.name}`;
-      cursor.style.fill = COLORS[Math.abs(data.name.hash()) % COLORS.length];
+      cursor.style.fill = getColor(data.name);
       document.body.appendChild(cursor);
     }
 
@@ -122,14 +123,17 @@
     } else {
       cursor.style.opacity = "0";
     }
-
   }
 
-
+  // On page load
   document.addEventListener("DOMContentLoaded", function () {
     join();
   });
 
+  // Utility function to generate color from user ID
+  function getColor(user) {
+    return COLORS[Math.abs(user.hash()) % COLORS.length]
+  }
   // Source: https://stackoverflow.com/a/7616484
   String.prototype.hash = function() {
     var hash = 0, i, chr;
@@ -142,8 +146,9 @@
     return hash;
   };
 
-
-
+  // ---------------------------------------------------------------------------
+  // IGV
+  // ---------------------------------------------------------------------------
   // // Load IGV
   // document.addEventListener("DOMContentLoaded", function () {
   //   var options =
@@ -190,9 +195,7 @@
   //                   // }
   //               ]
   //       };
-
   //   var igvDiv = document.getElementById("igvDiv");
-
   //   igv.createBrowser(igvDiv, options)
   //       .then(function (browser) {
   //           console.log("Created IGV browser");
@@ -201,7 +204,11 @@
 
 
 
-  ///////// https://github.com/m-gagne/limit.js/blob/master/limit.js
+  // ---------------------------------------------------------------------------
+  // Utilities
+  // ---------------------------------------------------------------------------
+
+  // Debounce. Source: https://github.com/m-gagne/limit.js/blob/master/limit.js
   Function.prototype.debounce = function(milliseconds, context) {
       var baseFunction = this, timer = null, wait = milliseconds;
       return function () {
@@ -212,40 +219,34 @@
           timer = setTimeout(complete, wait);
       };
   };
-  ////////
 
 
-  let prevX = 0, prevY = 0;
+  // ---------------------------------------------------------------------------
+  // Event handlers
+  // ---------------------------------------------------------------------------
+  
+  // When user moves their pointer
   document.getElementById("container").addEventListener("pointermove", function (e) {
     let x = e.clientX, y = e.clientY;
+    // Detect going outside the container
+    // TODO: use container's actual size
     if(x > 300 || y > 300) {
-      console.log("pointermove OUTSIDE")
       x = null;
       y = null;
     }
-
-    // if(Math.abs(x - prevX) < 1 || Math.abs(y - prevY) < 1)
-    //   return;
-
     currentWebSocket.send(JSON.stringify({ cursor: { x, y } }));
-
-    addChatMessage({
-      name: username,
-      cursor: { x, y }
-    }, true)
-
-    prevX = x;
-    prevY = y;
   }.debounce(10));
 
+  // When user leaves container area
   document.getElementById("container").addEventListener("pointerleave", function (e) {
     let x = e.clientX, y = e.clientY;
+    // TODO: user container's actual size
     if(x <= 300 || y <= 300)
       return
-    console.log("pointerleave")
     currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
   }.debounce(10));
 
+  // When leave or refresh page
   document.addEventListener("unload", function(e){
     currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
   });
