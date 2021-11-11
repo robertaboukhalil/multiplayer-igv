@@ -93,6 +93,7 @@
       });
     }
 
+
     // ---------------------------------------------------------------------------
     // Update cursors
     // ---------------------------------------------------------------------------
@@ -158,7 +159,13 @@
 
     // On page load
     document.addEventListener("DOMContentLoaded", function () {
+      // Connect to WebSocket
       join();
+
+      // Set user's pointer
+      const cursor = document.getElementById("cursor-template");
+      cursor.style.fill = getColor(username);
+      document.getElementById("container").style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`
     });
 
     // When user moves their pointer
