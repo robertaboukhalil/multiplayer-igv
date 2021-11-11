@@ -266,7 +266,6 @@ export class ChatRoom {
     this.storage = controller.storage;  // Durable storage
     this.env = env;                     // Environment bindings, e.g. KV namespaces, secrets
     this.sessions = [];                 // WebSocket sessions
-    this.locus = "chr3:1000000-1100000";// Genomic region // TODO:
   }
 
   async fetch(request) {
@@ -311,6 +310,9 @@ export class ChatRoom {
     backlog.forEach(value => {
       session.blockedMessages.push(value);
     });
+    session.blockedMessages.push(JSON.stringify({
+      locus: await this.storage.get("locus")
+    }));
 
     // Set event handlers to receive messages.
     let receivedUserInfo = false;
@@ -321,9 +323,9 @@ export class ChatRoom {
           return;
         }
 
-        // I guess we'll use JSON.
         let data = JSON.parse(msg.data);
 
+        // Get user info
         if (!receivedUserInfo) {
           // The first message the client sends is the user info message with their name. Save it
           // into their session object.
@@ -372,6 +374,7 @@ export class ChatRoom {
           return;
         }
 
+        // Get updated cursor position
         if(data.cursor != null) {
           let dataStr = JSON.stringify({
             name: session.name,
@@ -386,7 +389,14 @@ export class ChatRoom {
           // Broadcast the message to all other WebSockets.
           this.broadcast(dataStr);
           await this.storage.put(`cursor:${session.name}`, dataStr);
-          return
+          return;
+        }
+
+        // Get updated locus
+        if(data.locus != null) {
+          await this.storage.put("locus", data.locus);
+          this.broadcast(data);
+          return;
         }
 
         // // Construct sanitized message for storage and broadcast.
