@@ -98,20 +98,30 @@
     // Update cursors
     // ---------------------------------------------------------------------------
 
-    function addChatMessage(data) {
-      if(data.name === username)
+    function addChatMessage(data, doit=false) {
+      if(data.name === username && doit === false)
         return;
 
       let cursor = document.getElementById(`cursor-${data.name}`);
       if (cursor == null) {
         cursor = document.getElementById("cursor-template").cloneNode(true);
         cursor.id = `cursor-${data.name}`;
-        cursor.style.fill = getColor(data.name);
+
+        // // User shouldn't use transition in the pointer since we're only using it once the cursor leaves the container.
+        // // Also keep user's own pointer hidden until we need to display it
+        // if(data.name === username) {
+        //   cursor.style.transition = null;
+        //   cursor.style.fill = "transparent";
+        // } else {
+          cursor.style.fill = getColor(data.name);
+        // }
+
         document.body.appendChild(cursor);
       }
 
       if(data.cursor.x != null && data.cursor.y != null) {
         cursor.style.transform = `translateX(${data.cursor.x}px) translateY(${data.cursor.y}px)`;
+        // if(data.name !== username)
         cursor.style.opacity = "1";
       } else {
         cursor.style.opacity = "0";
@@ -166,16 +176,27 @@
       const cursor = document.getElementById("cursor-template");
       cursor.style.fill = getColor(username);
       document.getElementById("container").style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`
+      cursor.style.fill = "transparent";
     });
 
     // When user moves their pointer
+    let xPrev = 0, yPrev = 0;
     document.getElementById("container").addEventListener("pointermove", function (e) {
       let x = e.clientX, y = e.clientY;
+
+      // Remove user's own pointer *if* it's there
+      try {
+        document.getElementById(`cursor-${username}`).remove();
+      } catch (error) {}
+
       // Detect going outside the container
       // TODO: use container's actual size
       if(x > 300 || y > 300) {
         x = null;
         y = null;
+      } else {
+        xPrev = x;
+        yPrev = y;
       }
       currentWebSocket.send(JSON.stringify({ cursor: { x, y } }));
     }.debounce(10));
@@ -183,9 +204,11 @@
     // When user leaves container area
     document.getElementById("container").addEventListener("pointerleave", function (e) {
       let x = e.clientX, y = e.clientY;
+      console.log("leave", x, y)
       // TODO: user container's actual size
       if(x <= 300 || y <= 300)
         return
+      console.warn("leave", x, y)
       currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
     }.debounce(10));
 
@@ -193,5 +216,29 @@
     document.addEventListener("unload", function(e){
       currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
     });
+
+    // // When user focuses out, we still want the pointer to show in the container
+    // document.addEventListener('focusin', (event) => {
+    //   console.log("focusin")
+    //   addChatMessage({ name: username, cursor: { x: null, y: null } }, true)
+    // });
+    // document.addEventListener('focusout', (event) => {
+    //   console.log("focusout")
+    //   addChatMessage({ name: username, cursor: { x: xPrev, y: yPrev } }, true)
+    // });
+
+    // ---------------------------------------------------------------------------
+    // Show user's own pointer once window is out of focus (e.g. in case they open
+    // two windows side by side). This is removed when the user moves the mouse
+    // ---------------------------------------------------------------------------
+    function checkFocus() {
+      if(!document.hasFocus()) {
+        addChatMessage({ name: username, cursor: { x: xPrev, y: yPrev } }, true);
+      }
+      setTimeout(checkFocus, 500);
+    }
+
+    checkFocus();
+
     </script>
 </html>
