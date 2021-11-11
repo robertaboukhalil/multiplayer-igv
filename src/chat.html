@@ -220,6 +220,14 @@
         browser = br;
         console.log("Created IGV browser");
 
+        // TODO: Hide unsupported features
+        const unsupported = [
+          ".igv-gear-menu-column > div:nth-child(3)"  // Reference track settings
+        ];
+        unsupported.forEach(elQuery => {
+          document.querySelectorAll(elQuery)
+                  .forEach(el => el.style.visibility = "hidden");
+        });
 
         // Connect to WebSocket
         join();
