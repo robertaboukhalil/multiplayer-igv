@@ -184,13 +184,13 @@
       // Set user's pointer
       const cursor = document.getElementById("cursor-template");
       cursor.style.fill = getColor(username);
-      document.getElementById("container").style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`
+      container.style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`
       cursor.style.fill = "transparent";
     });
 
     // When user moves their pointer
     let xPrev = 0, yPrev = 0;
-    document.getElementById("container").addEventListener("pointermove", function (e) {
+    container.addEventListener("pointermove", function (e) {
       let x = e.clientX, y = e.clientY;
 
       // Remove user's own pointer *if* it's there
@@ -199,8 +199,7 @@
       } catch (error) {}
 
       // Detect going outside the container
-      // TODO: use container's actual size
-      if(x > 300 || y > 300) {
+      if(x > container.clientWidth || y > container.clientHeight) {
         x = null;
         y = null;
       } else {
@@ -211,11 +210,10 @@
     }.debounce(10));
 
     // When user leaves container area
-    document.getElementById("container").addEventListener("pointerleave", function (e) {
+    container.addEventListener("pointerleave", function (e) {
       let x = e.clientX, y = e.clientY;
       console.log("leave", x, y)
-      // TODO: user container's actual size
-      if(x <= 300 || y <= 300)
+      if(x <= container.clientWidth || y <= container.clientHeight)
         return
       console.warn("leave", x, y)
       currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
@@ -225,5 +223,5 @@
     document.addEventListener("unload", function(e){
       currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
     });
-    </script>
+  </script>
 </html>
