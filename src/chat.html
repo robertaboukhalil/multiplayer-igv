@@ -233,16 +233,20 @@
         join();
         checkFocus();
 
+        // Listen to IGV events
         browser.on("locuschange", function(refFrame) {
-          // chr, start, end, locusSearchString
-          console.log("refFrame", refFrame[0].getLocusString())
+          console.log("Set locus =", refFrame[0].getLocusString());
           currentWebSocket.send(JSON.stringify({ locus: refFrame[0].getLocusString() }));
+          // Reduce how many WebSockets messages we send
           clearTimeout(changingRegionTimer);
           changingRegion = true;
-          changingRegionTimer = setTimeout(() => {
-            changingRegion = false;
-          }, 500)
+          changingRegionTimer = setTimeout(() => { changingRegion = false; }, 500)
         }.debounce(50));
+
+        // TODO: Sync when remove tracks
+        browser.on("trackremoved", function(tracks) {
+          console.log("Remove tracks", tracks);
+        });
       });
 
       // Set user's pointer
