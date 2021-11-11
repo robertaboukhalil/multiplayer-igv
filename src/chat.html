@@ -30,7 +30,6 @@
 
     // Source: https://github.com/d3/d3-scale-chromatic/blob/main/src/categorical/category10.js
     const COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]
-
     
 
     // ---------------------------------------------------------------------------
@@ -73,9 +72,8 @@
         } else if (data.quit) {
           console.warn("QUIT", data);
           let cursor = document.getElementById(`cursor-${data.quit}`);
-          if (cursor != null) {
-            cursor.remove()
-          }
+          if (cursor != null)
+            cursor.remove();
         } else if (data.ready) {
           console.log("Ready.")
         } else {
@@ -102,65 +100,23 @@
       if(data.name === username && doit === false)
         return;
 
+      // Create cursor if not there yet
       let cursor = document.getElementById(`cursor-${data.name}`);
       if (cursor == null) {
         cursor = document.getElementById("cursor-template").cloneNode(true);
         cursor.id = `cursor-${data.name}`;
-
-        // // User shouldn't use transition in the pointer since we're only using it once the cursor leaves the container.
-        // // Also keep user's own pointer hidden until we need to display it
-        // if(data.name === username) {
-        //   cursor.style.transition = null;
-        //   cursor.style.fill = "transparent";
-        // } else {
-          cursor.style.fill = getColor(data.name);
-        // }
-
+        cursor.style.fill = getColor(data.name);
         document.body.appendChild(cursor);
       }
 
+      // Update its position
       if(data.cursor.x != null && data.cursor.y != null) {
         cursor.style.transform = `translateX(${data.cursor.x}px) translateY(${data.cursor.y}px)`;
-        // if(data.name !== username)
         cursor.style.opacity = "1";
       } else {
         cursor.style.opacity = "0";
       }
     }
-
-
-    // ---------------------------------------------------------------------------
-    // Utilities
-    // ---------------------------------------------------------------------------
-
-    // Generate a color from a user ID
-    function getColor(user) {
-      return COLORS[Math.abs(user.hash()) % COLORS.length]
-    }
-
-    // Debounce. Source: https://github.com/m-gagne/limit.js/blob/master/limit.js
-    Function.prototype.debounce = function(milliseconds, context) {
-        var baseFunction = this, timer = null, wait = milliseconds;
-        return function () {
-            var self = context || this, args = arguments;
-            function complete() { baseFunction.apply(self, args); timer = null; }
-            if(timer)
-                clearTimeout(timer);
-            timer = setTimeout(complete, wait);
-        };
-    };
-
-    // Hashing function. Source: https://stackoverflow.com/a/7616484
-    String.prototype.hash = function() {
-      var hash = 0, i, chr;
-      if (this.length === 0) return hash;
-      for (i = 0; i < this.length; i++) {
-        chr   = this.charCodeAt(i);
-        hash  = ((hash << 5) - hash) + chr;
-        hash |= 0; // Convert to 32bit integer
-      }
-      return hash;
-    };
 
 
     // ---------------------------------------------------------------------------
@@ -171,6 +127,7 @@
     document.addEventListener("DOMContentLoaded", function () {
       // Connect to WebSocket
       join();
+      checkFocus();
 
       // Set user's pointer
       const cursor = document.getElementById("cursor-template");
@@ -217,20 +174,19 @@
       currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
     });
 
-    // // When user focuses out, we still want the pointer to show in the container
-    // document.addEventListener('focusin', (event) => {
-    //   console.log("focusin")
-    //   addChatMessage({ name: username, cursor: { x: null, y: null } }, true)
-    // });
-    // document.addEventListener('focusout', (event) => {
-    //   console.log("focusout")
-    //   addChatMessage({ name: username, cursor: { x: xPrev, y: yPrev } }, true)
-    // });
 
     // ---------------------------------------------------------------------------
-    // Show user's own pointer once window is out of focus (e.g. in case they open
-    // two windows side by side). This is removed when the user moves the mouse
+    // Utilities
     // ---------------------------------------------------------------------------
+
+    // Generate a color from a user ID
+    function getColor(user) {
+      return COLORS[Math.abs(user.hash()) % COLORS.length]
+    }
+
+    // Show user's own pointer once window is out of focus (e.g. in case they open
+    // two windows side by side). This is removed when the user moves the mouse.
+    // Note: document.addEventListener with "focusin" and "focusout" didnt' work.
     function checkFocus() {
       if(!document.hasFocus()) {
         addChatMessage({ name: username, cursor: { x: xPrev, y: yPrev } }, true);
@@ -238,7 +194,28 @@
       setTimeout(checkFocus, 500);
     }
 
-    checkFocus();
+    // Debounce. Source: https://github.com/m-gagne/limit.js/blob/master/limit.js
+    Function.prototype.debounce = function(milliseconds, context) {
+        var baseFunction = this, timer = null, wait = milliseconds;
+        return function () {
+            var self = context || this, args = arguments;
+            function complete() { baseFunction.apply(self, args); timer = null; }
+            if(timer)
+                clearTimeout(timer);
+            timer = setTimeout(complete, wait);
+        };
+    };
 
+    // Hashing function. Source: https://stackoverflow.com/a/7616484
+    String.prototype.hash = function() {
+      var hash = 0, i, chr;
+      if (this.length === 0) return hash;
+      for (i = 0; i < this.length; i++) {
+        chr   = this.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return hash;
+    };
     </script>
 </html>
