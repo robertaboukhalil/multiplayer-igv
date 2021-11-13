@@ -252,7 +252,7 @@
       // Set user's pointer
       const cursor = document.getElementById("cursor-template");
       cursor.style.fill = getColor(username);
-      container.style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`
+      container.style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`;
       cursor.style.fill = "transparent";
     });
 

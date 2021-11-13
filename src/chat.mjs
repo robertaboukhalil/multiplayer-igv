@@ -162,22 +162,22 @@ export const ulid = factory();
 
 
 
+// =============================================================================
+// Call a function and catch errors, with support for HTTP/WebSockets requests
+// =============================================================================
 
 async function handleErrors(request, func) {
   try {
     return await func();
   } catch (err) {
     if (request.headers.get("Upgrade") == "websocket") {
-      // Annoyingly, if we return an HTTP error in response to a WebSocket request, Chrome devtools
-      // won't show us the response body! So... let's send a WebSocket response with an error
-      // frame instead.
       let pair = new WebSocketPair();
       pair[1].accept();
-      pair[1].send(JSON.stringify({error: err.stack}));
+      pair[1].send(JSON.stringify({ error: err.stack }));
       pair[1].close(1011, "Uncaught exception during session setup");
       return new Response(null, { status: 101, webSocket: pair[0] });
     } else {
-      return new Response(err.stack, {status: 500});
+      return new Response(err.stack, { status: 500 });
     }
   }
 }
@@ -255,13 +255,14 @@ async function handleApiRequest(path, request, env) {
   }
 }
 
+
 // =======================================================================================
 // The ChatRoom Durable Object Class
 
 // ChatRoom implements a Durable Object that coordinates an individual chat room. Participants
 // connect to the room using WebSockets, and the room broadcasts messages from each participant
 // to all others.
-export class ChatRoom {
+export class IGVRoom {
   constructor(controller, env) {
     this.storage = controller.storage;  // Durable storage
     this.env = env;                     // Environment bindings, e.g. KV namespaces, secrets
@@ -398,34 +399,10 @@ export class ChatRoom {
           this.broadcast(data);
           return;
         }
-
-        // // Construct sanitized message for storage and broadcast.
-        // data = { name: session.name, message: "" + data.message };
-
-        // // Block people from sending overly long messages. This is also enforced on the client,
-        // // so to trigger this the user must be bypassing the client code.
-        // if (data.message.length > 256) {
-        //   webSocket.send(JSON.stringify({error: "Message too long."}));
-        //   return;
-        // }
-
-        // // Add timestamp. Here's where this.lastTimestamp comes in -- if we receive a bunch of
-        // // messages at the same time (or if the clock somehow goes backwards????), we'll assign
-        // // them sequential timestamps, so at least the ordering is maintained.
-        // data.timestamp = Math.max(Date.now(), this.lastTimestamp + 1);
-        // this.lastTimestamp = data.timestamp;
-
-        // // Broadcast the message to all other WebSockets.
-        // let dataStr = JSON.stringify(data);
-        // this.broadcast(dataStr);
-
-        // // Save message.
-        // let key = new Date(data.timestamp).toISOString();
-        // await this.storage.put(`message:${key}`, dataStr);
       } catch (err) {
         // Report any exceptions directly back to the client. As with our handleErrors() this
         // probably isn't what you'd want to do in production, but it's convenient when testing.
-        webSocket.send(JSON.stringify({error: err.stack}));
+        webSocket.send(JSON.stringify({ error: err.stack }));
       }
     });
 
@@ -445,9 +422,8 @@ export class ChatRoom {
   // broadcast() broadcasts a message to all clients.
   broadcast(message) {
     // Apply JSON if we weren't given a string to start with.
-    if (typeof message !== "string") {
+    if (typeof message !== "string")
       message = JSON.stringify(message);
-    }
 
     // Iterate over all the sessions sending them messages.
     let quitters = [];
@@ -472,9 +448,8 @@ export class ChatRoom {
     });
 
     quitters.forEach(quitter => {
-      if (quitter.name) {
-        this.broadcast({quit: quitter.name});
-      }
+      if (quitter.name)
+        this.broadcast({ quit: quitter.name });
     });
   }
 }

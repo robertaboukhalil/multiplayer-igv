@@ -11,7 +11,5 @@ rules = [{type = "Data", globs = ["**/*.html"]}]
 
 [durable_objects]
 bindings = [
-  { name = "rooms", class_name = "ChatRoom" },
-  # { name = "limiters", class_name = "RateLimiter" }
+  { name = "rooms", class_name = "IGVRoom" },
 ]
-# wrangler publish --delete-class RateLimiter
