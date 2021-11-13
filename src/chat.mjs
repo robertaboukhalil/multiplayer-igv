@@ -2,24 +2,8 @@ import HTML from "chat.html";
 
 
 // =============================================================================
-// Call a function and catch errors, with support for HTTP/WebSockets requests
+// 
 // =============================================================================
-
-async function handleErrors(request, func) {
-	try {
-		return await func();
-	} catch (err) {
-		if (request.headers.get("Upgrade") == "websocket") {
-			let pair = new WebSocketPair();
-			pair[1].accept();
-			pair[1].send(JSON.stringify({ error: err.stack }));
-			pair[1].close(1011, "Uncaught exception during session setup");
-			return new Response(null, { status: 101, webSocket: pair[0] });
-		} else {
-			return new Response(err.stack, { status: 500 });
-		}
-	}
-}
 
 export default {
 	async fetch(request, env) {
@@ -46,53 +30,6 @@ export default {
 	}
 }
 
-
-async function handleApiRequest(path, request, env) {
-	// We've received at API request. Route the request based on the path.
-
-	switch (path[0]) {
-		case "room": {
-			// Request for `/api/room/...`.
-
-			if (!path[1]) {
-				// The request is for just "/api/room", with no ID.
-				// if (request.method == "POST") {
-				//   // POST to /api/room creates a private room.
-				//   let id = env.rooms.newUniqueId();
-				//   return new Response(id.toString(), {headers: {"Access-Control-Allow-Origin": "*"}});
-				// } else {
-				//   // List rooms
-					return new Response("Method not allowed", {status: 405});
-				// }
-			}
-
-			// OK, the request is for `/api/room/<name>/...`. It's time to route to the Durable Object
-			// for the specific room.
-			let name = path[1];
-			name = "test";  // FIXME: for now, only 1 document called "test"
-
-			// Each Durable Object has a 256-bit unique ID. IDs can be derived from string names, or
-			// chosen randomly by the system.
-			let id;
-			if (name.match(/^[0-9a-f]{64}$/)) {
-				id = env.rooms.idFromString(name);
-			} else if (name.length <= 32) {
-				id = env.rooms.idFromName(name);
-			} else {
-				return new Response("Name too long", {status: 404});
-			}
-
-			// Get the Durable Object stub for this room!
-			let roomObject = env.rooms.get(id);
-			let newUrl = new URL(request.url);
-			newUrl.pathname = "/" + path.slice(2).join("/");
-			return roomObject.fetch(newUrl, request);
-		}
-
-		default:
-			return new Response("Not found", {status: 404});
-	}
-}
 
 
 // =======================================================================================
@@ -281,5 +218,60 @@ export class IGVRoom {
 			if (quitter.name)
 				this.broadcast({ quit: quitter.name });
 		});
+	}
+}
+
+// =============================================================================
+// Utilities
+// =============================================================================
+
+// Call a function and catch errors, with support for HTTP/WebSockets requests
+async function handleErrors(request, func) {
+	try {
+		return await func();
+	} catch (err) {
+		if (request.headers.get("Upgrade") == "websocket") {
+			let pair = new WebSocketPair();
+			pair[1].accept();
+			pair[1].send(JSON.stringify({ error: err.stack }));
+			pair[1].close(1011, "Uncaught exception during session setup");
+			return new Response(null, { status: 101, webSocket: pair[0] });
+		} else {
+			return new Response(err.stack, { status: 500 });
+		}
+	}
+}
+
+// Route API requests
+async function handleApiRequest(path, request, env) {
+	const endpoint = path[0];
+	const name = "test";  // path[1];  // FIXME: hardcoded for now
+
+	switch(endpoint) {
+		case "room": {
+			// // TODO: POST /api/room
+			// if(!path[1] && request.method == "POST") {
+			// 	const id = env.rooms.newUniqueId();
+			// 	return new Response(id.toString(), { headers: { "Access-Control-Allow-Origin": "*" }});
+			// }
+
+			// Each Durable Object has a 256-bit unique ID, derived or randomly generated
+			let id;
+			if (name.match(/^[0-9a-f]{64}$/))
+				id = env.rooms.idFromString(name);
+			else if (name.length <= 32)
+				id = env.rooms.idFromName(name);
+			else
+				return new Response("Name too long", {status: 404});
+
+			// Get the Durable Object stub for this room!
+			let roomObject = env.rooms.get(id);
+			let newUrl = new URL(request.url);
+			newUrl.pathname = "/" + path.slice(2).join("/");
+			return roomObject.fetch(newUrl, request);
+		}
+
+		default:
+			return new Response("Not found", { status: 404 });
 	}
 }

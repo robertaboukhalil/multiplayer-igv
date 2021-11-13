@@ -140,9 +140,8 @@
       ws.addEventListener("message", event => {
         let data = JSON.parse(event.data);
 
-        if (data.error) {
-          handleMessage(null);
-          console.error("ERROR:", data.error)
+        if(data.error) {
+          console.error("WebSocket Error:", data.error);
         } else if (data.joined) {
           console.warn("JOINED", data);
         } else if (data.quit) {
@@ -173,6 +172,7 @@
     // ---------------------------------------------------------------------------
 
     function handleMessage(data) {
+      console.log("MESSAGE", data)
       // Update cursor
       if(data.cursor != null)
         return updateCursor(data);
