@@ -1,5 +1,7 @@
 // Cloudflare Worker that handles API requests (HTTP and WebSockets).
-import HTML from "./igv.html";
+// Uses ES module format to support Durable Objects.
+
+import HTML from "./index.html";
 
 
 // =============================================================================
