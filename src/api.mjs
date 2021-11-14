@@ -1,3 +1,4 @@
+// Cloudflare Worker that handles API requests (HTTP and WebSockets).
 import HTML from "./igv.html";
 
 
