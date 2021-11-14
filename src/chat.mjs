@@ -65,6 +65,9 @@ export class IGVRoom {
 	// Handle new WebSockets connection
 	// ---------------------------------------------------------------------------
 	async handleSession(webSocket) {
+		// -------------------------------------------------------------------------
+		// Initialize connection
+		// -------------------------------------------------------------------------
 		webSocket.accept();
 
 		// Create our session and add it to the sessions list.
@@ -93,71 +96,69 @@ export class IGVRoom {
 		});
 		await this.storage.delete(cursorsToDelete);
 
-		// Set event handlers to receive messages.
+		// -------------------------------------------------------------------------
+		// Process a WebSocket message
+		// -------------------------------------------------------------------------
 		let receivedUserInfo = false;
 		webSocket.addEventListener("message", async msg => {
 			try {
-				if (session.quit) {
-					webSocket.close(1011, "WebSocket broken.");
-					return;
-				}
+				if (session.quit)
+					return webSocket.close(1011, "WebSocket broken.");
+				const data = JSON.parse(msg.data);
 
-				let data = JSON.parse(msg.data);
-
-				// Get user info
+				// ---------------------------------------------------------------------
+				// First time we see this user?
+				// ---------------------------------------------------------------------
 				if (!receivedUserInfo) {
-					// The first message the client sends is the user info message with their name. Save it
-					// into their session object.
 					session.name = "" + (data.name || "anonymous");
-
-					// Don't let people use ridiculously long names. (This is also enforced on the client,
-					// so if they get here they are not using the intended client.)
 					if (session.name.length > 64) {
-						webSocket.send(JSON.stringify({error: "Name too long."}));
+						webSocket.send(JSON.stringify({ error: "Name too long." }));
 						webSocket.close(1009, "Name too long.");
 						return;
 					}
 
-					// Deliver all the messages we queued up since the user connected.
-					session.blockedMessages.forEach(queued => {
-						webSocket.send(queued);
-					});
+					// Deliver messages queued up since the user connected
+					session.blockedMessages.forEach(queued => webSocket.send(queued));
 					session.blockedMessages = [];
 
-					// Broadcast to all other connections that this user has joined.
-					this.broadcast({joined: session.name});
-					webSocket.send(JSON.stringify({ready: true}));
-
-					// Note that we've now received the user info message.
+					// Broadcast that this user has joined
+					this.broadcast({ joined: session.name });
+					webSocket.send(JSON.stringify({ ready: true }));
 					receivedUserInfo = true;
 					return;
 				}
 
-				// Get updated cursor position
+				// ---------------------------------------------------------------------
+				// Update locus
+				// ---------------------------------------------------------------------
+				if(data.locus != null) {
+					await this.storage.put("locus", data.locus);
+					this.broadcast(data);
+					return;
+				}
+
+				// ---------------------------------------------------------------------
+				// Update cursor position
+				// ---------------------------------------------------------------------
 				if(data.cursor != null) {
 					let dataStr = JSON.stringify({
 						name: session.name,
 						timestamp: new Date().getTime(),
 						...data
 					});
+
 					if(data.cursor.x === null || data.cursor.y === null) {
 						await this.storage.delete(`cursor:${session.name}`);
 						this.broadcast(dataStr);
 						return;
 					}
-					
-					// Broadcast the message to all other WebSockets.
+
+					// Broadcast the message to all other WebSockets
 					this.broadcast(dataStr);
 					await this.storage.put(`cursor:${session.name}`, dataStr);
 					return;
 				}
 
-				// Get updated locus
-				if(data.locus != null) {
-					await this.storage.put("locus", data.locus);
-					this.broadcast(data);
-					return;
-				}
 			} catch (err) {
 				// Report any exceptions directly back to the client. As with our handleErrors() this
 				// probably isn't what you'd want to do in production, but it's convenient when testing.
@@ -165,11 +166,13 @@ export class IGVRoom {
 			}
 		});
 
-		// On "close" and "error" events, remove the WebSocket from the sessions list and broadcast
+		// -------------------------------------------------------------------------
+		// Handle close/error WebSocket events
+		// -------------------------------------------------------------------------
 		let closeOrErrorHandler = async evt => {
 			session.quit = true;
 			this.sessions = this.sessions.filter(member => member !== session);
-			if (session.name) {
+			if(session.name) {
 				await this.storage.delete(`cursor:${session.name}`);
 				this.broadcast({ quit: session.name });
 			}
