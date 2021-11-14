@@ -2,42 +2,36 @@ import HTML from "chat.html";
 
 
 // =============================================================================
-// 
+// Handle fetch requests
 // =============================================================================
 
 export default {
 	async fetch(request, env) {
 		return await handleErrors(request, async () => {
-			// We have received an HTTP request! Parse the URL and route the request.
+			const url = new URL(request.url);
+			const path = url.pathname.slice(1).split("/");
 
-			let url = new URL(request.url);
-			let path = url.pathname.slice(1).split('/');
+			// Landing page
+			if(!path[0])
+				return new Response(HTML, { headers: {"Content-Type": "text/html;charset=UTF-8"} });
 
-			if (!path[0]) {
-				// Serve our HTML at the root path.
-				return new Response(HTML, {headers: {"Content-Type": "text/html;charset=UTF-8"}});
-			}
-
-			switch (path[0]) {
+			// API requests
+			switch(path[0]) {
 				case "api":
-					// This is a request for `/api/...`, call the API handler.
 					return handleApiRequest(path.slice(1), request, env);
 
 				default:
-					return new Response("Not found", {status: 404});
+					return new Response("Not found", { status: 404 });
 			}
 		});
 	}
 }
 
 
+// =============================================================================
+// IGVRoom Durable Object: 1 shared IGV document = 1 durable object
+// =============================================================================
 
-// =======================================================================================
-// The ChatRoom Durable Object Class
-
-// ChatRoom implements a Durable Object that coordinates an individual chat room. Participants
-// connect to the room using WebSockets, and the room broadcasts messages from each participant
-// to all others.
 export class IGVRoom {
 	constructor(controller, env) {
 		this.storage = controller.storage;  // Durable storage
@@ -45,13 +39,15 @@ export class IGVRoom {
 		this.sessions = [];                 // WebSocket sessions
 	}
 
+	// ---------------------------------------------------------------------------
+	// Handle WebSocket connection requests
+	// ---------------------------------------------------------------------------
 	async fetch(request) {
 		return await handleErrors(request, async () => {
-			let url = new URL(request.url);
+			const url = new URL(request.url);
 
-			switch (url.pathname) {
+			switch(url.pathname) {
 				case "/websocket": {
-					// The request is to `/api/room/<name>/websocket`. A client is trying to establish a new WebSocket session.
 					if (request.headers.get("Upgrade") != "websocket")
 						return new Response("expected websocket", {status: 400});
 					let pair = new WebSocketPair();
@@ -65,19 +61,20 @@ export class IGVRoom {
 		});
 	}
 
-	// handleSession() implements our WebSocket-based chat protocol.
+	// ---------------------------------------------------------------------------
+	// Handle new WebSockets connection
+	// ---------------------------------------------------------------------------
 	async handleSession(webSocket) {
 		webSocket.accept();
 
 		// Create our session and add it to the sessions list.
-		let session = {webSocket, blockedMessages: []};
+		let session = { webSocket, blockedMessages: [] };
 		this.sessions.push(session);
 
 		// Queue "join" messages for all online users, to populate the client's roster.
 		this.sessions.forEach(otherSession => {
-			if (otherSession.name) {
-				session.blockedMessages.push(JSON.stringify({joined: otherSession.name}));
-			}
+			if(otherSession.name)
+				session.blockedMessages.push(JSON.stringify({ joined: otherSession.name }));
 		});
 
 		// TODO:
@@ -220,6 +217,7 @@ export class IGVRoom {
 		});
 	}
 }
+
 
 // =============================================================================
 // Utilities
