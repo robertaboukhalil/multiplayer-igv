@@ -14,3 +14,6 @@ main = "./api.mjs"  # dist/api.mjs
 bindings = [
   { name = "rooms", class_name = "IGVRoom" },
 ]
+
+[site]
+bucket = "./public"

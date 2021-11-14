@@ -2,6 +2,7 @@
 // Uses ES module format to support Durable Objects.
 
 import HTML from "./index.html";
+import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
 
 
 // =============================================================================
@@ -24,7 +25,12 @@ export default {
 					return handleApiRequest(path.slice(1), request, env);
 
 				default:
-					return new Response("Not found", { status: 404 });
+					return await getAssetFromKV({
+						request
+					}, {
+						ASSET_NAMESPACE: env.__STATIC_CONTENT,
+						ASSET_MANIFEST: {"app.bundle.js": "app.bundle.420d534f03.js"},  // FIXME:
+					});
 			}
 		});
 	}
