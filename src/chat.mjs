@@ -87,7 +87,7 @@ export class IGVRoom {
 		// Initialize (and cleanup) cursor positions
 		let cursorsToDelete = [];
 		const cursors = await this.storage.list({ prefix: "cursor:", reverse: true, limit: 20 });
-		cursors.forEach(value => {
+		cursors.forEach((value, key) => {
 			const timestamp = JSON.parse(value).timestamp;
 			if(timestamp == null || new Date().getTime() - timestamp > 100000)
 				cursorsToDelete.push(key);
@@ -181,13 +181,14 @@ export class IGVRoom {
 		webSocket.addEventListener("error", closeOrErrorHandler);
 	}
 
-	// broadcast() broadcasts a message to all clients.
+	// ---------------------------------------------------------------------------
+	// Broadcast message to all clients
+	// ---------------------------------------------------------------------------
 	broadcast(message) {
-		// Apply JSON if we weren't given a string to start with.
-		if (typeof message !== "string")
+		if(typeof message !== "string")
 			message = JSON.stringify(message);
 
-		// Iterate over all the sessions sending them messages.
+		// Broadcast message
 		let quitters = [];
 		this.sessions = this.sessions.filter(session => {
 			if (session.name) {
@@ -195,8 +196,7 @@ export class IGVRoom {
 					session.webSocket.send(message);
 					return true;
 				} catch (err) {
-					// Whoops, this connection is dead. Remove it from the list and arrange to notify
-					// everyone below.
+					// Whoops, this connection is dead; remove it and notify everyone else
 					session.quit = true;
 					quitters.push(session);
 					return false;

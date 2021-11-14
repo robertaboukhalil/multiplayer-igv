@@ -172,18 +172,15 @@
     // ---------------------------------------------------------------------------
 
     function handleMessage(data) {
-      console.log("MESSAGE", data)
       // Update cursor
       if(data.cursor != null)
         return updateCursor(data);
 
       // Update locus only if I'm not the one changing it already!
-      if(data.locus != null && changingRegion === false) {
-        if(browser.currentLoci()[0] != data.locus)
-          return browser.search(data.locus);
-      }
+      if(data.locus != null && changingRegion === false && browser.currentLoci()[0] != data.locus)
+        return browser.search(data.locus);
 
-      console.log("message", data)
+      console.log("Unrecognized message:", data)
     }
 
     function updateCursor(data, doit=false) {
@@ -283,7 +280,6 @@
       console.log("leave", x, y)
       if(x <= container.clientWidth || y <= container.clientHeight)
         return
-      console.warn("leave", x, y)
       currentWebSocket.send(JSON.stringify({ cursor: { x: null, y: null } }));
     }.debounce(10));
 
