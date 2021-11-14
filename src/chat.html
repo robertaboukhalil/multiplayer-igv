@@ -35,6 +35,7 @@
     let browserChangeLocus = 0;  // How many times we've changed the locus (first time == initializing)
     let changingRegion = false;
     let changingRegionTimer = null;
+    let prevX = 0, prevY = 0, prevLocus = null;
 
     const container = document.getElementById("container");
 
@@ -86,7 +87,7 @@
     // Note: document.addEventListener with "focusin" and "focusout" didnt' work.
     function checkFocus() {
       if(!document.hasFocus()) {
-        updateCursor({ name: username, cursor: { x: xPrev, y: yPrev } }, true);
+        updateCursor({ name: username, cursor: { x: prevX, y: prevY } }, true);
       }
       setTimeout(checkFocus, 500);
     }
@@ -248,8 +249,14 @@
           // If changing locus before IGV is ready, means we're just initializing the locus
           if(browserChangeLocus++ < 1)
             return;
+
+          // Don't broadcast a locus change if it hasn't changed!
+          if(prevLocus === refFrame[0].getLocusString())
+            return;
           console.log("Set locus =", refFrame[0].getLocusString());
+          prevLocus = refFrame[0].getLocusString();
           broadcast({ locus: refFrame[0].getLocusString() });
+
           // Reduce how many WebSockets messages we send
           clearTimeout(changingRegionTimer);
           changingRegion = true;
@@ -270,7 +277,6 @@
     });
 
     // When user moves their pointer
-    let xPrev = 0, yPrev = 0;
     container.addEventListener("pointermove", function (e) {
       // Remove user's own pointer *if* it's there
       try {
@@ -283,8 +289,8 @@
         x = null;
         y = null;
       } else {
-        xPrev = x;
-        yPrev = y;
+        prevX = x;
+        prevY = y;
       }
       broadcast({ cursor: { x, y } });
     }.debounce(10));
