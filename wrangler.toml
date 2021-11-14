@@ -3,11 +3,12 @@ type = "javascript"
 workers_dev = true
 compatibility_date = "2021-11-10"
 
+[build]
+command = "npm install && npm run build"
+
 [build.upload]
 format = "modules"
-dir = "src"
 main = "./igv.mjs"
-rules = [{type = "Data", globs = ["**/*.html"]}]
 
 [durable_objects]
 bindings = [
