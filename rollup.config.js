@@ -3,18 +3,20 @@ import commonjs from "@rollup/plugin-commonjs";
 import { terser } from "rollup-plugin-terser";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 
-export default {
-	input: "src/igv.mjs",
+export default [{
+	input: "src/api.mjs",
 	output: {
 		format: "es",
 		exports: "named",
-		file: "dist/igv.mjs",
+		file: "dist/api.mjs",
 		// sourcemap: true
 	},
 	plugins: [
-			html({ include: "**/*.html" }),
-			commonjs(),
-			nodeResolve({ browser: true }),
-			terser()
-		],
-}
+		html({ include: "**/*.html" }),
+		commonjs(),
+		nodeResolve({ browser: true }),
+		terser()
+	],
+}, /*{
+
+}*/];

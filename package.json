@@ -2,7 +2,6 @@
   "name": "igv",
   "description": "Multiplayer IGV",
   "version": "1.0.0",
-  "module": "./src/igv.mjs",
   "scripts": {
     "build": "rollup -c"
   },
