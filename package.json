@@ -3,9 +3,15 @@
   "description": "Multiplayer IGV",
   "version": "1.0.0",
   "module": "./src/igv.mjs",
-  "private": true,
-  "main": "src/igv.mjs",
-  "dependencies": {
-    "ulid": "^2.3.0"
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-node-resolve": "^11.1.0",
+    "rollup": "^2.36.1",
+    "rollup-plugin-html": "^0.2.1",
+    "rollup-plugin-terser": "^7.0.2"
   }
 }
