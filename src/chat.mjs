@@ -77,16 +77,21 @@ export class IGVRoom {
 				session.blockedMessages.push(JSON.stringify({ joined: otherSession.name }));
 		});
 
-		// TODO:
-		let storage = await this.storage.list({ start: "cursor:", reverse: true, limit: 100 });
-		let backlog = [...storage.values()];
-		backlog.reverse();
-		backlog.forEach(value => {
-			session.blockedMessages.push(value);
+		// Initialize locus position
+		const locus = await this.storage.get("locus");
+		session.blockedMessages.push(JSON.stringify({ locus }));
+
+		// Initialize (and cleanup) cursor positions
+		let cursorsToDelete = [];
+		const cursors = await this.storage.list({ prefix: "cursor:", reverse: true, limit: 20 });
+		cursors.forEach(value => {
+			const timestamp = JSON.parse(value).timestamp;
+			if(timestamp == null || new Date().getTime() - timestamp > 100000)
+				cursorsToDelete.push(key);
+			else
+				session.blockedMessages.push(value)
 		});
-		session.blockedMessages.push(JSON.stringify({
-			locus: await this.storage.get("locus")
-		}));
+		await this.storage.delete(cursorsToDelete);
 
 		// Set event handlers to receive messages.
 		let receivedUserInfo = false;
@@ -122,16 +127,6 @@ export class IGVRoom {
 					// Broadcast to all other connections that this user has joined.
 					this.broadcast({joined: session.name});
 					webSocket.send(JSON.stringify({ready: true}));
-
-					// Clean up old users
-					let storage = await this.storage.list({ start: "cursor:", limit: 20 });
-					let keys = [...storage.keys()];
-					let keysToDelete = [];
-					for(let key of keys) {
-						if(storage.get(key).timestamp == null || new Date().getTime() - storage.get(key).timestamp > 100000)
-							keysToDelete.push(key);
-					}
-					await this.storage.delete(keysToDelete);
 
 					// Note that we've now received the user info message.
 					receivedUserInfo = true;
