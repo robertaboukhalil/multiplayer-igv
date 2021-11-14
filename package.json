@@ -1,10 +1,10 @@
 {
-  "name": "edge-chat-demo",
-  "description": "An edge chat service that runs on Cloudflare Workers using Durable Objects",
+  "name": "igv",
+  "description": "Multiplayer IGV",
   "version": "1.0.0",
-  "module": "./src/chat.mjs",
+  "module": "./src/igv.mjs",
   "private": true,
-  "main": "src/chat.mjs",
+  "main": "src/igv.mjs",
   "dependencies": {
     "ulid": "^2.3.0"
   }

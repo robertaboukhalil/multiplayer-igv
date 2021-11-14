@@ -6,7 +6,7 @@ compatibility_date = "2021-11-10"
 [build.upload]
 format = "modules"
 dir = "src"
-main = "./chat.mjs"
+main = "./igv.mjs"
 rules = [{type = "Data", globs = ["**/*.html"]}]
 
 [durable_objects]
