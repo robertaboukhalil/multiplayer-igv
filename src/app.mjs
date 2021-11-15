@@ -1,5 +1,7 @@
+import { ulid } from "ulid";
+
 let currentWebSocket = null;
-let username = `${ULID.ulid()}:robert`;
+let username = `${ulid()}:robert`;
 let roomname = "test";
 let hostname = window.location.host;
 let browser = {};  // IGV object

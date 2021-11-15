@@ -27,7 +27,9 @@ export default [
 		},
 		// Copy over static assets
 		plugins: [
-			copy({ targets: [{ src: "src/index.html", dest: "dist/" }] })
+			copy({ targets: [{ src: "src/index.html", dest: "dist/" }] }),
+			commonjs(),
+			nodeResolve({ browser: true })
 		]
 	}
 ];
