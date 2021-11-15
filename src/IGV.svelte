@@ -151,12 +151,11 @@ function updateCursor(data) {
 	// Don't update own cursor
 	if(data.name === username)
 		return;
-
 	// If we haven't seen this cursor before
 	if(!(data.name in cursors))
 		cursors[data.name] = {};
 
-	const [x, y, timestamp] = [data.cursor.x, data.cursor.y, data.cursor.timestamp];
+	const [x, y, timestamp] = [data.cursor.x, data.cursor.y, data.timestamp];
 	if(x == null || y == null) {
 		delete cursors[data.name];
 		cursors = cursors;
