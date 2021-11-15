@@ -103,6 +103,7 @@ function join() {
 			console.error("WebSocket Error:", data.error);
 		} else if (data.joined) {
 			console.warn("JOINED", data);
+			cursors[data.joined] = { x: 10, y: 10 };
 		} else if (data.quit) {
 			console.warn("QUIT", data);
 			delete cursors[data.quit];
@@ -155,14 +156,12 @@ function updateCursor(data) {
 	if(!(data.name in cursors))
 		cursors[data.name] = {};
 
-	const x = data.cursor.x;
-	const y = data.cursor.y;
+	const [x, y, timestamp] = [data.cursor.x, data.cursor.y, data.cursor.timestamp];
 	if(x == null || y == null) {
 		delete cursors[data.name];
 		cursors = cursors;
 	} else {
-		cursors[data.name].x = x;
-		cursors[data.name].y = y;
+		cursors[data.name] = { x, y, timestamp };
 	}
 }
 
@@ -243,7 +242,10 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 
 <!-- Cursors -->
 {#each Object.keys(cursors) as name}
-	<Cursor {name} x={cursors[name].x} y={cursors[name].y} />
+	<!-- Don't show old cursors -->
+	{#if new Date().getTime() - cursors[name].timestamp < 100000}
+		<Cursor {name} x={cursors[name].x} y={cursors[name].y} />
+	{/if}
 {/each}
 
 <!-- Shared container -->
