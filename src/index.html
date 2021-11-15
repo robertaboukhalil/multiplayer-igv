@@ -3,26 +3,9 @@
 	<head>
 		<title>Multiplayer IGV</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<link rel="stylesheet" href="/app.css">
 	</head>
 	<body>
-		<!-- Cursor based on https://github.com/liveblocks/liveblocks/blob/main/examples/javascript-live-cursors/static/index.html -->
-		<svg
-			id="cursor-template"
-			style="position: absolute; left: 0; top: 0; transition: transform 0.3s cubic-bezier(0.17, 0.93, 0.38, 1)"
-			width="24"
-			height="36"
-			viewBox="0 0 24 36"
-			fill="transparent"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path d="M 8.553 13.433 L 11.511 19.256 L 9.083 20.717 L 6.176 14.382 L 2.433 17.229 L 2.433 1.544 L 12.79 12.907 L 8.553 13.433 Z"/>
-		</svg>
-
-		<!-- Shared container -->
-		<div id="container" style="height:500px; width:700px; border: 1px solid lightgray; overflow-y: hidden; overflow-x: hidden">
-			<div id="igvDiv"></div>
-		</div>
-
 		<script src="https://cdn.jsdelivr.net/npm/igv@2.10.1/dist/igv.min.js"></script>
 		<script src="/app.js"></script>
 	</body>
