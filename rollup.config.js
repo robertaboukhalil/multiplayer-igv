@@ -1,7 +1,7 @@
 import html from "rollup-plugin-html";
 import commonjs from "@rollup/plugin-commonjs";
 import { terser } from "rollup-plugin-terser";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
+import nodeResolve from "@rollup/plugin-node-resolve";
 
 export default [{
 	input: "src/api.mjs",
@@ -17,6 +17,9 @@ export default [{
 		nodeResolve({ browser: true }),
 		terser()
 	],
-}, /*{
-
-}*/];
+}, {
+	input: "src/app.mjs",
+	output: {
+		file: "dist/app.mjs"
+	}
+}];

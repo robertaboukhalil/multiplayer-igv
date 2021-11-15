@@ -3,6 +3,7 @@
 
 import HTML from "./index.html";
 import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
+import manifestJSON from "__STATIC_CONTENT_MANIFEST";
 
 
 // =============================================================================
@@ -25,11 +26,14 @@ export default {
 					return handleApiRequest(path.slice(1), request, env);
 
 				default:
+					// Serve static assets.
+					// TODO: update "kv-asset-handler" once it supports ES modules
 					return await getAssetFromKV({
-						request
+						request,
+						waitUntil: () => {}
 					}, {
 						ASSET_NAMESPACE: env.__STATIC_CONTENT,
-						ASSET_MANIFEST: {"app.bundle.js": "app.bundle.420d534f03.js"},  // FIXME:
+						ASSET_MANIFEST: JSON.parse(manifestJSON)
 					});
 			}
 		});
