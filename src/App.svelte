@@ -202,7 +202,6 @@ function updateCursor(data, doit=false) {
 
 // On page load
 onMount(() => {
-// document.addEventListener("DOMContentLoaded", function () {
 	// Setup IGV
 	igv.createBrowser(document.getElementById("igvDiv"), IGV_OPTIONS).then(function (br) {
 		browser = br;
@@ -271,7 +270,6 @@ function handlePointerMove(e) {
 	}
 	broadcast({ cursor: { x, y } });
 }
-handlePointerMove.debounce(10);
 
 // When user leaves container area
 function handlePointerLeave(e) {
@@ -279,13 +277,18 @@ function handlePointerLeave(e) {
 		return
 	broadcast({ cursor: { x: null, y: null } });
 }
-handlePointerLeave.debounce(10);
 
 // When leave or refresh page
-document.addEventListener("unload", function(e){
+function handleUnload(e) {
 	broadcast({ cursor: { x: null, y: null } });
-});
+};
+
+// Add debounce to event handlers to reduce WebSockets events
+handlePointerMove = handlePointerMove.debounce(10);
+handlePointerLeave = handlePointerLeave.debounce(10);
 </script>
+
+<svelte:window on:unload={handleUnload}/>
 
 <!-- Cursor based on https://github.com/liveblocks/liveblocks/blob/main/examples/javascript-live-cursors/static/index.html -->
 <svg
