@@ -17,4 +17,4 @@ bindings = [
 
 [site]
 bucket = "./dist"
-include = ["app.mjs"]
+include = ["app.mjs", "index.html"]
