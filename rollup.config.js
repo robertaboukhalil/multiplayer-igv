@@ -1,7 +1,9 @@
 import copy from "rollup-plugin-copy";
-import commonjs from "@rollup/plugin-commonjs";
+import css from "rollup-plugin-css-only";
+import svelte from "rollup-plugin-svelte";
 import { terser } from "rollup-plugin-terser";
-import nodeResolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import resolve from "@rollup/plugin-node-resolve";
 
 export default [
 	// API (back-end)
@@ -15,21 +17,26 @@ export default [
 		},
 		plugins: [
 			commonjs(),
-			nodeResolve({ browser: true }),
+			resolve({ browser: true }),
 			terser()
 		]
 	},
 	// App (front-end)
 	{
-		input: "src/app.mjs",
+		input: "src/app.js",
 		output: {
-			file: "dist/app.mjs"
+			file: "dist/app.js",
+			format: "iife",
+			name: "app"
 		},
 		// Copy over static assets
 		plugins: [
+			svelte(),
+			css({ output: "app.css" }),
 			copy({ targets: [{ src: "src/index.html", dest: "dist/" }] }),
 			commonjs(),
-			nodeResolve({ browser: true })
+			resolve({ browser: true }),
+			terser()
 		]
 	}
 ];
