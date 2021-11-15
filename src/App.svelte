@@ -104,6 +104,7 @@ function join() {
 		} else if (data.quit) {
 			console.warn("QUIT", data);
 			delete cursors[data.quit];
+			cursors = cursors;
 		} else if (data.ready) {
 			console.log("Ready.")
 		} else {
@@ -154,9 +155,10 @@ function updateCursor(data) {
 
 	const x = data.cursor.x;
 	const y = data.cursor.y;
-	if(x == null || y == null)
+	if(x == null || y == null) {
 		delete cursors[data.name];
-	else {
+		cursors = cursors;
+	} else {
 		cursors[data.name].x = x;
 		cursors[data.name].y = y;
 	}
@@ -173,15 +175,6 @@ onMount(() => {
 	igv.createBrowser(document.getElementById("igvDiv"), IGV_OPTIONS).then(function (br) {
 		browser = br;
 		console.log("Created IGV browser");
-
-		// TODO: Hide unsupported features
-		const unsupported = [
-			".igv-gear-menu-column > div:nth-child(3)"  // Reference track settings
-		];
-		unsupported.forEach(elQuery => {
-			document.querySelectorAll(elQuery)
-							.forEach(el => el.style.visibility = "hidden");
-		});
 
 		// Connect to WebSocket
 		join();
@@ -252,7 +245,7 @@ handlePointerMove = debounce(handlePointerMove, 10);
 handlePointerLeave = debounce(handlePointerLeave, 10);
 </script>
 
-<svelte:window on:unload={handleUnload}/>
+<svelte:window on:beforeunload={handleUnload}/>
 
 <!-- Cursors -->
 {#each Object.keys(cursors) as name}
