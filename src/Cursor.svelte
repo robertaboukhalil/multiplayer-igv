@@ -16,13 +16,14 @@ function getColor(user) {
 <svg
 	id="cursor"
 	style="left: {x}; top: {y}"
-	width="24"
+	width="200"
 	height="36"
-	viewBox="0 0 24 36"
+	viewBox="0 0 200 36"
 	fill={hidden ? "transparent" : getColor(name)}
 	xmlns="http://www.w3.org/2000/svg"
 >
 	<path d="M 8.553 13.433 L 11.511 19.256 L 9.083 20.717 L 6.176 14.382 L 2.433 17.229 L 2.433 1.544 L 12.79 12.907 L 8.553 13.433 Z"/>
+	<text fill={getColor(name)} x="15" y="20" font-family="Helvetica, Arial, sans-serif" font-size="smaller">{name.split(":")[1]}</text>
 </svg>
 
 <style>

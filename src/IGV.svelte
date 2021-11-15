@@ -205,12 +205,6 @@ onMount(() => {
 			console.log("Remove tracks", tracks);
 		});
 	});
-
-	// Initialize user's pointer
-	cursors[username] = {
-		x: 100,
-		y: 100
-	};
 });
 
 // When user moves their pointer
