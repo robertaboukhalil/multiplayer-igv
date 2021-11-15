@@ -1,7 +1,6 @@
 // Cloudflare Worker that handles API requests (HTTP and WebSockets).
 // Uses ES module format to support Durable Objects.
 
-import HTML from "./index.html";
 import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
 import manifestJSON from "__STATIC_CONTENT_MANIFEST";
 
@@ -16,26 +15,18 @@ export default {
 			const url = new URL(request.url);
 			const path = url.pathname.slice(1).split("/");
 
-			// Landing page
-			if(!path[0])
-				return new Response(HTML, { headers: {"Content-Type": "text/html;charset=UTF-8"} });
-
 			// API requests
-			switch(path[0]) {
-				case "api":
-					return handleApiRequest(path.slice(1), request, env);
+			if(path[0] === "api")
+				return handleApiRequest(path.slice(1), request, env);
 
-				default:
-					// Serve static assets.
-					// TODO: update "kv-asset-handler" once it supports ES modules
-					return await getAssetFromKV({
-						request,
-						waitUntil: () => {}
-					}, {
-						ASSET_NAMESPACE: env.__STATIC_CONTENT,
-						ASSET_MANIFEST: JSON.parse(manifestJSON)
-					});
-			}
+			// Serve static assets (workaround until "kv-asset-handler" supports ES modules)
+			return await getAssetFromKV({
+				request,
+				waitUntil: () => {}
+			}, {
+				ASSET_NAMESPACE: env.__STATIC_CONTENT,
+				ASSET_MANIFEST: JSON.parse(manifestJSON)
+			});
 		});
 	}
 }
