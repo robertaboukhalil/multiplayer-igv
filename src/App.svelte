@@ -2,7 +2,13 @@
 import { onMount } from "svelte";
 import { ulid } from "ulid";
 import { debounce } from "debounce";
-import hash from "string-hash";
+
+import Cursor from "./Cursor.svelte";
+
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
 
 let currentWebSocket = null;
 let username = `${ulid()}:robert`;
@@ -12,11 +18,9 @@ let browserChangeLocus = 0;  // How many times we've changed the locus (first ti
 let changingRegion = false;
 let changingRegionTimer = null;
 let prevX = 0, prevY = 0, prevLocus = null;
-
 let container;  // Element #container
 
 // Source: https://github.com/d3/d3-scale-chromatic/blob/main/src/categorical/category10.js
-const COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]
 const IGV_OPTIONS = {
 	// Example of fully specifying a reference. We could alternatively use "genome: 'hg19'"
 	reference: {
@@ -43,6 +47,13 @@ const IGV_OPTIONS = {
 };
 
 // ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
+let cursors = {};  // { username: { x: 100, y: 100, hidden: false } }
+
+
+// ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
 
@@ -51,21 +62,6 @@ function broadcast(data) {
 	if(currentWebSocket === null)
 		return;
 	currentWebSocket.send(JSON.stringify(data));
-}
-
-// Generate a color from a user ID
-function getColor(user) {
-	return COLORS[Math.abs(hash(user)) % COLORS.length];
-}
-
-// Show user's own pointer once window is out of focus (e.g. in case they open
-// two windows side by side). This is removed when the user moves the mouse.
-// Note: document.addEventListener with "focusin" and "focusout" didnt' work.
-function checkFocus() {
-	if(!document.hasFocus()) {
-		updateCursor({ name: username, cursor: { x: prevX, y: prevY } }, true);
-	}
-	setTimeout(checkFocus, 500);
 }
 
 
@@ -107,9 +103,7 @@ function join() {
 			console.warn("JOINED", data);
 		} else if (data.quit) {
 			console.warn("QUIT", data);
-			let cursor = document.getElementById(`cursor-${data.quit}`);
-			if (cursor != null)
-				cursor.remove();
+			delete cursors[data.quit];
 		} else if (data.ready) {
 			console.log("Ready.")
 		} else {
@@ -149,25 +143,18 @@ function handleMessage(data) {
 	}
 }
 
-function updateCursor(data, doit=false) {
-	if(data.name === username && doit === false)
-		return;
+function updateCursor(data) {
+	// If we haven't seen this cursor before
+	if(!(data.name in cursors))
+		cursors[data.name] = {};
 
-	// Create cursor if not there yet
-	let cursor = document.getElementById(`cursor-${data.name}`);
-	if (cursor == null) {
-		cursor = document.getElementById("cursor-template").cloneNode(true);
-		cursor.id = `cursor-${data.name}`;
-		cursor.style.fill = getColor(data.name);
-		document.body.appendChild(cursor);
-	}
-
-	// Update its position
-	if(data.cursor.x != null && data.cursor.y != null) {
-		cursor.style.transform = `translateX(${data.cursor.x}px) translateY(${data.cursor.y}px)`;
-		cursor.style.opacity = "1";
-	} else {
-		cursor.style.opacity = "0";
+	const x = data.cursor.x;
+	const y = data.cursor.y;
+	if(x == null || y == null)
+		delete cursors[data.name];
+	else {
+		cursors[data.name].x = x;
+		cursors[data.name].y = y;
 	}
 }
 
@@ -221,20 +208,16 @@ onMount(() => {
 		});
 	});
 
-	// Set user's pointer
-	const cursor = document.getElementById("cursor-template");
-	cursor.style.fill = getColor(username);
-	container.style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`;
-	cursor.style.fill = "transparent";
+
+	// Initialize user's pointer
+	cursors[username] = {
+		x: 100,
+		y: 100
+	};
 });
 
 // When user moves their pointer
 function handlePointerMove(e) {
-	// Remove user's own pointer *if* it's there
-	try {
-		document.getElementById(`cursor-${username}`).remove();
-	} catch (error) {}
-
 	// Detect going outside the container
 	let x = e.clientX, y = e.clientY;
 	if(x > container.clientWidth || y > container.clientHeight) {
@@ -244,13 +227,16 @@ function handlePointerMove(e) {
 		prevX = x;
 		prevY = y;
 	}
-	broadcast({ cursor: { x, y } });
+	broadcast({ cursor: {
+		x: Math.round(x),
+		y: Math.round(y)
+	} });
 }
 
 // When user leaves container area
 function handlePointerLeave(e) {
 	if(e.clientX <= container.clientWidth || e.clientY <= container.clientHeight)
-		return
+		return;
 	broadcast({ cursor: { x: null, y: null } });
 }
 
@@ -266,18 +252,10 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 
 <svelte:window on:unload={handleUnload}/>
 
-<!-- Cursor based on https://github.com/liveblocks/liveblocks/blob/main/examples/javascript-live-cursors/static/index.html -->
-<svg
-	id="cursor-template"
-	style="position: absolute; left: 0; top: 0; transition: transform 0.3s cubic-bezier(0.17, 0.93, 0.38, 1)"
-	width="24"
-	height="36"
-	viewBox="0 0 24 36"
-	fill="transparent"
-	xmlns="http://www.w3.org/2000/svg"
->
-	<path d="M 8.553 13.433 L 11.511 19.256 L 9.083 20.717 L 6.176 14.382 L 2.433 17.229 L 2.433 1.544 L 12.79 12.907 L 8.553 13.433 Z"/>
-</svg>
+<!-- Cursors -->
+{#each Object.keys(cursors) as name}
+	<Cursor {name} x={cursors[name].x} y={cursors[name].y} />
+{/each}
 
 <!-- Shared container -->
 <div id="container" bind:this={container} on:pointermove={handlePointerMove} on:pointerleave={handlePointerLeave}>
