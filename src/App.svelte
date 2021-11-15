@@ -1,7 +1,8 @@
 <script>
 import { onMount } from "svelte";
-
 import { ulid } from "ulid";
+import { debounce } from "debounce";
+import hash from "string-hash";
 
 let currentWebSocket = null;
 let username = `${ulid()}:robert`;
@@ -55,7 +56,7 @@ function broadcast(data) {
 
 // Generate a color from a user ID
 function getColor(user) {
-	return COLORS[Math.abs(user.hash()) % COLORS.length];
+	return COLORS[Math.abs(hash(user)) % COLORS.length];
 }
 
 // Show user's own pointer once window is out of focus (e.g. in case they open
@@ -67,30 +68,6 @@ function checkFocus() {
 	}
 	setTimeout(checkFocus, 500);
 }
-
-// Debounce. Source: https://github.com/m-gagne/limit.js/blob/master/limit.js
-Function.prototype.debounce = function(milliseconds, context) {
-		var baseFunction = this, timer = null, wait = milliseconds;
-		return function () {
-				var self = context || this, args = arguments;
-				function complete() { baseFunction.apply(self, args); timer = null; }
-				if(timer)
-						clearTimeout(timer);
-				timer = setTimeout(complete, wait);
-		};
-};
-
-// Hashing function. Source: https://stackoverflow.com/a/7616484
-String.prototype.hash = function() {
-	var hash = 0, i, chr;
-	if (this.length === 0) return hash;
-	for (i = 0; i < this.length; i++) {
-		chr   = this.charCodeAt(i);
-		hash  = ((hash << 5) - hash) + chr;
-		hash |= 0; // Convert to 32bit integer
-	}
-	return hash;
-};
 
 
 // ---------------------------------------------------------------------------
@@ -221,7 +198,7 @@ onMount(() => {
 		checkFocus();
 
 		// Listen to IGV events
-		browser.on("locuschange", function(refFrame) {
+		browser.on("locuschange", debounce(refFrame => {
 			// If changing locus before IGV is ready, means we're just initializing the locus
 			if(browserChangeLocus++ < 1)
 				return;
@@ -237,7 +214,7 @@ onMount(() => {
 			clearTimeout(changingRegionTimer);
 			changingRegion = true;
 			changingRegionTimer = setTimeout(() => { changingRegion = false; }, 500)
-		}.debounce(50));
+		}, 50));
 
 		// TODO: Sync when remove tracks
 		browser.on("trackremoved", function(tracks) {
@@ -284,8 +261,8 @@ function handleUnload(e) {
 };
 
 // Add debounce to event handlers to reduce WebSockets events
-handlePointerMove = handlePointerMove.debounce(10);
-handlePointerLeave = handlePointerLeave.debounce(10);
+handlePointerMove = debounce(handlePointerMove, 10);
+handlePointerLeave = debounce(handlePointerLeave, 10);
 </script>
 
 <svelte:window on:unload={handleUnload}/>
