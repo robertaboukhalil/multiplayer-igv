@@ -7,39 +7,38 @@ import hash from "string-hash";
 let currentWebSocket = null;
 let username = `${ulid()}:robert`;
 let roomname = "test";
-let hostname = window.location.host;
 let browser = {};  // IGV object
 let browserChangeLocus = 0;  // How many times we've changed the locus (first time == initializing)
 let changingRegion = false;
 let changingRegionTimer = null;
 let prevX = 0, prevY = 0, prevLocus = null;
 
-let container; // = document.getElementById("container");
+let container;  // Element #container
 
 // Source: https://github.com/d3/d3-scale-chromatic/blob/main/src/categorical/category10.js
 const COLORS = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]
 const IGV_OPTIONS = {
 	// Example of fully specifying a reference. We could alternatively use "genome: 'hg19'"
 	reference: {
-			id: "hg19",
-			fastaURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/1kg_v37/human_g1k_v37_decoy.fasta",
-			cytobandURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/b37/b37_cytoband.txt"
+		id: "hg19",
+		fastaURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/1kg_v37/human_g1k_v37_decoy.fasta",
+		cytobandURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/b37/b37_cytoband.txt"
 	},
 	locus: "8:128,750,948-128,751,025",
 	tracks: [{
-			type: 'alignment',
-			format: 'cram',
-			url: 'https://s3.amazonaws.com/1000genomes/phase3/data/HG00096/exome_alignment/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam.cram',
-			indexURL: 'https://s3.amazonaws.com/1000genomes/phase3/data/HG00096/exome_alignment/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam.cram.crai',
-			name: 'HG00096',
-			displayMode: "SQUISHED",
-			sort: {
-					chr: "chr8",
-					position: 128750986,
-					option: "BASE",
-					direction: "ASC"
-			},
-			height: 600
+		type: 'alignment',
+		format: 'cram',
+		url: 'https://s3.amazonaws.com/1000genomes/phase3/data/HG00096/exome_alignment/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam.cram',
+		indexURL: 'https://s3.amazonaws.com/1000genomes/phase3/data/HG00096/exome_alignment/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam.cram.crai',
+		name: 'HG00096',
+		displayMode: "SQUISHED",
+		sort: {
+			chr: "chr8",
+			position: 128750986,
+			option: "BASE",
+			direction: "ASC"
+		},
+		height: 600
 	}]
 };
 
@@ -75,7 +74,7 @@ function checkFocus() {
 // ---------------------------------------------------------------------------
 
 function join() {
-	let ws = new WebSocket("wss://" + hostname + "/api/room/" + roomname + "/websocket");
+	let ws = new WebSocket(`wss://${window.location.host}/api/room/${roomname}/websocket`);
 	let rejoined = false;
 	let startTime = Date.now();
 
