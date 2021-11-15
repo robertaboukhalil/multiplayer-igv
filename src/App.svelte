@@ -144,6 +144,10 @@ function handleMessage(data) {
 }
 
 function updateCursor(data) {
+	// Don't update own cursor
+	if(data.name === username)
+		return;
+
 	// If we haven't seen this cursor before
 	if(!(data.name in cursors))
 		cursors[data.name] = {};
@@ -181,7 +185,6 @@ onMount(() => {
 
 		// Connect to WebSocket
 		join();
-		checkFocus();
 
 		// Listen to IGV events
 		browser.on("locuschange", debounce(refFrame => {
@@ -208,7 +211,6 @@ onMount(() => {
 		});
 	});
 
-
 	// Initialize user's pointer
 	cursors[username] = {
 		x: 100,
@@ -224,13 +226,13 @@ function handlePointerMove(e) {
 		x = null;
 		y = null;
 	} else {
+		broadcast({ cursor: {
+			x: x != null ? Math.round(x) : null,
+			y: y != null ? Math.round(y) : null
+		} });
 		prevX = x;
 		prevY = y;
 	}
-	broadcast({ cursor: {
-		x: Math.round(x),
-		y: Math.round(y)
-	} });
 }
 
 // When user leaves container area
