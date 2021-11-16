@@ -28,6 +28,12 @@ async function saveUser(name) {
 	username = `${ulid()}:${name}`;
 }
 
+// Handle pressing Enter in name textbox
+function handleKeyDown(e) {
+	if (e.key === "Enter")
+		saveUser(usernameNew);
+}
+
 // On load, add room to local history if not seen before
 onMount(async () => {
 	rooms = await localforage.getItem("rooms") || [];
@@ -42,7 +48,7 @@ onMount(async () => {
 {:else if roomname && !username}
 	<div class="input-group mb-3">
 		<span class="input-group-text" id="input-name">Your name:</span>
-		<input type="text" class="form-control" aria-label="Username" aria-describedby="input-name" bind:value={usernameNew}>
+		<input type="text" class="form-control" aria-label="Username" aria-describedby="input-name" bind:value={usernameNew} on:keydown={handleKeyDown} autocomplete="off" autofocus>
 	</div>
 
 	<button class="btn btn-outline-success mt-4" on:click={() => saveUser(usernameNew)} {disabled}>Save</button>
