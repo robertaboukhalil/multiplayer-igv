@@ -30,9 +30,7 @@ onMount(async () => {
 {#if roomname}
 	<IGV {username} {roomname} />
 {:else}
-	<button on:click={createRoom} {disabled}>Create a new room</button>
-
-	<h5 class="mt-3">Recently viewed</h5>
+	<h5 class="mt-3">Recently viewed rooms</h5>
 	{#if rooms.length == 0}
 		<span class="text-muted">None</span>
 	{:else}
@@ -40,4 +38,6 @@ onMount(async () => {
 			<a href="?room={room}">{room}</a><br />
 		{/each}
 	{/if}
+
+	<button class="btn btn-outline-success mt-4" on:click={createRoom} {disabled}>Create a new room</button>
 {/if}
