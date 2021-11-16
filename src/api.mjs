@@ -258,8 +258,9 @@ async function handleApiRequest(path, request, env) {
 			let id;
 			if(name.match(/^[0-9a-f]{64}$/))
 				id = env.rooms.idFromString(name);
-			else if (name.length <= 32)
-				id = env.rooms.idFromName(name);
+			// For now, don't allow users to enter a custom room name
+			// else if (name.length <= 32)
+			// 	id = env.rooms.idFromName(name);
 			else
 				return new Response("Unknown document", { status: 404 });
 
