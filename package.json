@@ -11,6 +11,7 @@
     "bootstrap": "^5.1.3",
     "d3-scale-chromatic": "^3.0.0",
     "debounce": "^1.2.1",
+    "localforage": "^1.10.0",
     "string-hash": "^1.1.3",
     "ulid": "^2.3.0"
   },
