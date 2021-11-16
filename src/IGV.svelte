@@ -1,6 +1,7 @@
 <script>
 import { onMount } from "svelte";
 import { debounce } from "debounce";
+import { getColor } from "./utils";
 import Cursor from "./Cursor.svelte";
 
 export let username;
@@ -248,8 +249,21 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 {/each}
 
 <!-- Shared container -->
-<div id="container" bind:this={container} on:pointermove={handlePointerMove} on:pointerleave={handlePointerLeave}>
-	<div id="igvDiv"></div>
+<div style="display:flex">
+	<div id="container" bind:this={container} on:pointermove={handlePointerMove} on:pointerleave={handlePointerLeave}>
+		<div id="igvDiv"></div>
+	</div>
+	<div id="users">
+		{#each Object.keys(cursors) as name}
+			{#if cursors[name].timestamp == null || new Date().getTime() - cursors[name].timestamp < 100000}
+				<span style="color: {getColor(name)}">&bullet;</span> {name.split(":")[1]}
+				{#if name === username}
+					<strong>(me)</strong>
+				{/if}
+				<br />
+			{/if}
+		{/each}	
+	</div>
 </div>
 
 <style>
@@ -259,5 +273,9 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 	border: 1px solid lightgray;
 	overflow-x: hidden;
 	overflow-y: hidden;
+}
+
+#users {
+	margin-left: 20px;
 }
 </style>
