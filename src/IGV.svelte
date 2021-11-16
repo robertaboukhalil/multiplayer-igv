@@ -155,7 +155,7 @@ function handleMessage(data) {
 
 	// Update locus only if I'm not the one changing it already!
 	else if(data.locus != null) {
-		if(changingRegion === false && browser.currentLoci()[0] != data.locus)
+		if(changingRegion === false && browser.currentLoci().join(" ") != data.locus)
 			browser.search(data.locus);
 	}
 
