@@ -201,17 +201,19 @@ onMount(() => {
 		container.style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`;
 
 		// Listen to IGV events
-		browser.on("locuschange", debounce(refFrame => {
+		browser.on("locuschange", debounce(refFrames => {
 			// If changing locus before IGV is ready, means we're just initializing the locus
 			if(locusNbChanges++ < 1)
 				return;
 
+			// Support multi-loci!
+			const locusCurr = browser.currentLoci().join(" ");
 			// Don't broadcast a locus change if it hasn't changed!
-			if(locusPrev === refFrame[0].getLocusString())
+			if(locusPrev === locusCurr)
 				return;
-			console.log("Set locus =", refFrame[0].getLocusString());
-			locusPrev = refFrame[0].getLocusString();
-			broadcast({ locus: refFrame[0].getLocusString() });
+			console.log("Set locus =", locusCurr);
+			locusPrev = locusCurr;
+			broadcast({ locus: locusCurr });
 
 			// Reduce how many WebSockets messages we send
 			clearTimeout(changingRegionTimer);
@@ -219,9 +221,12 @@ onMount(() => {
 			changingRegionTimer = setTimeout(() => { changingRegion = false }, 500);
 		}, 50));
 
-		// TODO: Sync when remove tracks
+		// TODO: Sync when delete/reorder tracks
 		browser.on("trackremoved", function(tracks) {
-			console.log("Remove tracks", tracks);
+			console.log("Removed tracks", tracks);
+		});
+		browser.on("trackorderchanged", function(tracks) {
+			console.log("Moved tracks", tracks);
 		});
 	});
 });
