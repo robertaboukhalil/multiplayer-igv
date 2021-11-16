@@ -48,6 +48,7 @@ onMount(async () => {
 {:else if roomname && !username}
 	<div class="input-group mb-3">
 		<span class="input-group-text" id="input-name">Your name:</span>
+		<!-- svelte-ignore a11y-autofocus -->
 		<input type="text" class="form-control" aria-label="Username" aria-describedby="input-name" bind:value={usernameNew} on:keydown={handleKeyDown} autocomplete="off" autofocus>
 	</div>
 
