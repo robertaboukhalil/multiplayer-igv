@@ -74,7 +74,7 @@ function broadcast(data) {
 // ---------------------------------------------------------------------------
 
 function join() {
-	let ws = new WebSocket(`wss://${window.location.host}/api/room/${roomname}/websocket`);
+	let ws = new WebSocket(`wss://${window.location.host}/api/rooms/${roomname}/websocket`);
 	let rejoined = false;
 	let startTime = Date.now();
 

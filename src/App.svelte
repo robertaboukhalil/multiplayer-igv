@@ -3,7 +3,11 @@ import { ulid } from "ulid";
 import IGV from "./IGV.svelte";
 
 let username = `${ulid()}:robert`;
-let roomname = "test";
+let roomname = new URL(window.location).searchParams.get("room");
 </script>
 
-<IGV {username} {roomname} />
+{#if roomname}
+	<IGV {username} {roomname} />
+{:else}
+	[ Create a new room ]
+{/if}

@@ -245,24 +245,23 @@ async function handleErrors(request, func) {
 // Route API requests
 async function handleApiRequest(path, request, env) {
 	const endpoint = path[0];
-	const name = "test";  // path[1];  // FIXME: hardcoded for now
+	const name = path[1];
 
 	switch(endpoint) {
-		case "room": {
-			// // TODO: POST /api/room
-			// if(!path[1] && request.method == "POST") {
-			// 	const id = env.rooms.newUniqueId();
-			// 	return new Response(id.toString(), { headers: { "Access-Control-Allow-Origin": "*" }});
-			// }
+		case "rooms": {
+			// POST /api/rooms/
+			if(request.method == "POST" && !name)
+				return new Response(env.rooms.newUniqueId().toString());
 
+			// GET /api/rooms/<roomID>
 			// Each Durable Object has a 256-bit unique ID, derived or randomly generated
 			let id;
-			if (name.match(/^[0-9a-f]{64}$/))
+			if(name.match(/^[0-9a-f]{64}$/))
 				id = env.rooms.idFromString(name);
 			else if (name.length <= 32)
 				id = env.rooms.idFromName(name);
 			else
-				return new Response("Name too long", {status: 404});
+				return new Response("Unknown document", { status: 404 });
 
 			// Get the Durable Object stub for this room!
 			let roomObject = env.rooms.get(id);
