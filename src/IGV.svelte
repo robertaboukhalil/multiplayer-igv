@@ -297,7 +297,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<h5>Connected Users</h5>
 		{#each Object.keys(cursors) as name}
 			{#if cursors[name].timestamp == null || new Date().getTime() - cursors[name].timestamp < 1000000}
-				<span style="color: {getColor(name)}">&bullet;</span> {name.split(":")[1]}
+				<span style="color: {getColor(name)}">&#11044;</span> {name.split(":")[1]}
 				{#if name === username}
 					<strong>(me)</strong>
 				{/if}
