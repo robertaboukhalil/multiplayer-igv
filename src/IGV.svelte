@@ -52,9 +52,10 @@ let changingRegion = false; // Whether user is currently changing the locus
 let changingRegionTimer = null;
 
 // UI
-let cursor;			// Current user's cursor element
-let container;  	// Element #container
-let cursors = {};	// { username: { x: 100, y: 100, hidden: false } }
+let cursor;					// Current user's cursor element
+let container;  			// Element #container
+let cursors = {};			// { username: { x: 100, y: 100, hidden: false } }
+let isDoneCopy = false;		// Whether we're copying to clipboard
 
 
 // ---------------------------------------------------------------------------
@@ -66,6 +67,21 @@ function broadcast(data) {
 	if(webSocket === null)
 		return;
 	webSocket.send(JSON.stringify(data));
+}
+
+// Copy to clipboard: https://komsciguy.com/js/a-better-way-to-copy-text-to-clipboard-in-javascript/
+function copyToClipboard(text) {
+	const listener = function(ev) {
+		ev.preventDefault();
+		ev.clipboardData.setData("text/plain", text);
+	};
+	document.addEventListener("copy", listener);
+	document.execCommand("copy");
+	document.removeEventListener("copy", listener);
+
+	// Update UI
+	isDoneCopy = true;
+	setTimeout(() => isDoneCopy = false, 800);
 }
 
 
@@ -270,6 +286,15 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<div id="igvDiv"></div>
 	</div>
 	<div id="users">
+		<h5>Share</h5>
+		<div class="input-group mb-5">
+			<input type="text" class="form-control" aria-label="URL to share with others" aria-describedby="button-share" value={String(window.location)} disabled>
+			<button class="btn btn-primary" type="button" id="button-share" on:click={() => copyToClipboard(String(window.location))}>
+				Copy URL {#if isDoneCopy}✓{/if}
+			</button>
+		</div>
+
+		<h5>Connected Users</h5>
 		{#each Object.keys(cursors) as name}
 			{#if cursors[name].timestamp == null || new Date().getTime() - cursors[name].timestamp < 100000}
 				<span style="color: {getColor(name)}">&bullet;</span> {name.split(":")[1]}
@@ -278,7 +303,9 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 				{/if}
 				<br />
 			{/if}
-		{/each}	
+		{/each}
+
+		<a class="btn btn-sm btn-outline-secondary mt-4" href="?room=">Leave</a>
 	</div>
 </div>
 
