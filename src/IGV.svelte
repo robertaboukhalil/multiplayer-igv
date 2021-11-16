@@ -52,6 +52,7 @@ let changingRegion = false; // Whether user is currently changing the locus
 let changingRegionTimer = null;
 
 // UI
+let cursor;			// Current user's cursor element
 let container;  	// Element #container
 let cursors = {};	// { username: { x: 100, y: 100, hidden: false } }
 
@@ -180,6 +181,9 @@ onMount(() => {
 		// Connect to WebSocket
 		join();
 
+		// Set user pointer
+		container.style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`;
+
 		// Listen to IGV events
 		browser.on("locuschange", debounce(refFrame => {
 			// If changing locus before IGV is ready, means we're just initializing the locus
@@ -239,6 +243,18 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 </script>
 
 <svelte:window on:beforeunload={handleUnload}/>
+
+<!-- User's custom cursor to override the default cursor with-->
+<svg bind:this={cursor}
+	style="display:none"
+	width="24"
+	height="36"
+	viewBox="0 0 24 36"
+	fill={getColor(username)}
+	xmlns="http://www.w3.org/2000/svg"
+>
+	<path d="M 8.553 13.433 L 11.511 19.256 L 9.083 20.717 L 6.176 14.382 L 2.433 17.229 L 2.433 1.544 L 12.79 12.907 L 8.553 13.433 Z"/>
+</svg>
 
 <!-- Cursors -->
 {#each Object.keys(cursors) as name}
