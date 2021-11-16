@@ -5,7 +5,7 @@ import { onMount } from "svelte";
 import IGV from "./IGV.svelte";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-let username = localStorage.getItem("user");  // localStorage is synchronous
+let username = null;
 let roomname = new URL(window.location).searchParams.get("room");
 let disabled = false;
 let rooms = [];
@@ -26,7 +26,6 @@ async function saveUser(name) {
 	if(!name)
 		return;
 	username = `${ulid()}:${name}`;
-	localStorage.setItem("user", username);
 }
 
 // On load, add room to local history if not seen before
@@ -40,7 +39,7 @@ onMount(async () => {
 
 {#if roomname && username}
 	<IGV {username} {roomname} />
-{:else if !username}
+{:else if roomname && !username}
 	<div class="input-group mb-3">
 		<span class="input-group-text" id="input-name">Your name:</span>
 		<input type="text" class="form-control" aria-label="Username" aria-describedby="input-name" bind:value={usernameNew}>
