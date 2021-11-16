@@ -1,16 +1,10 @@
 <script>
-import hash from "string-hash";
-import { schemeCategory10 } from "d3-scale-chromatic";
+import { getColor } from "./utils";
 
 export let name = "anonymous";
 export let hidden = false;
 export let x = 0;
 export let y = 0;
-
-// Generate a color from a user ID
-function getColor(user) {
-	return schemeCategory10[Math.abs(hash(user)) % schemeCategory10.length];
-}
 </script>
 
 <svg
