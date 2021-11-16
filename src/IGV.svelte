@@ -315,7 +315,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 	width: 700px;
 	border: 1px solid lightgray;
 	overflow-x: hidden;
-	overflow-y: hidden;
+	overflow-y: scroll;
 }
 
 #users {
