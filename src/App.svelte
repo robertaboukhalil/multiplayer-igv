@@ -1,6 +1,7 @@
 <script>
 import { ulid } from "ulid";
 import { onMount } from "svelte";
+import localforage from "localforage";
 import IGV from "./IGV.svelte";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -10,11 +11,11 @@ import "bootstrap/dist/css/bootstrap.min.css";
 // =============================================================================
 
 let roomID = new URL(window.location).searchParams.get("room");
-let roomName = "My IGV View";  // Room name chosen by user
-let userID = null;             // User ID, i.e. <uuid>:<user name>
-let userName = "anonymous";    // Name chosen by user
-let rooms = [];                // Recently seen rooms
-let isBtnDisabled = false;     // Whether form buttons should be enabled
+let roomName = "";          // Room name chosen by user
+let rooms = [];             // Recently seen rooms
+let userID = null;          // User ID, i.e. <uuid>:<user name>
+let userName = "";          // Name chosen by user
+let isBtnDisabled = false;  // Whether form buttons should be enabled
 
 
 // =============================================================================
@@ -39,9 +40,8 @@ async function createRoom() {
 }
 
 // On load
-onMount(() => {
-	// TODO:
-	// rooms = ?
+onMount(async () => {
+	rooms = await localforage.getItem("rooms") || [];
 });
 
 
@@ -62,10 +62,10 @@ onMount(() => {
 		<div class="input-group mb-3">
 			<span class="input-group-text">Your name:</span>
 			<!-- svelte-ignore a11y-autofocus -->
-			<input type="text" class="form-control" bind:value={userName} autocomplete="off" autofocus>
+			<input type="text" class="form-control" bind:value={userName} placeholder="Enter your name" autocomplete="off" autofocus>
 		</div>
 	</form>
-	<button class="btn btn-outline-success mt-4" on:click={saveUser} disabled={isBtnDisabled}>Save</button>
+	<button class="btn btn-outline-success mt-4" on:click={saveUser} disabled={isBtnDisabled}>Save{#if isBtnDisabled} ⌛{/if}</button>
 
 <!-- Other show landing page -->
 {:else}
@@ -75,21 +75,21 @@ onMount(() => {
 		<span class="text-muted">None</span><br />
 	{:else}
 		{#each rooms as room}
-			<a href="?room={room}">{room}</a><br />
+			<a href="?room={room.id}">{room.name}</a><br />
 		{/each}
 	{/if}
 
 	<h5 class="mt-5">Create a new room</h5>
 	<form on:submit|preventDefault={createRoom}>
 		<div class="input-group mb-3">
-			<span class="input-group-text">Room name</span>
-			<input type="text" class="form-control" bind:value={roomName}>
+			<span class="input-group-text">Room name:</span>
+			<input type="text" class="form-control" placeholder="Enter a room name" bind:value={roomName}>
 		</div>
 		<div class="input-group mb-3">
 			<span class="input-group-text">Your name:</span>
-			<input type="text" class="form-control" bind:value={userName}>
+			<input type="text" class="form-control" placeholder="Enter your name" bind:value={userName}>
 		</div>
 	</form>
 
-	<button class="btn btn-outline-success mt-4" on:click={createRoom} disabled={isBtnDisabled}>Create</button>
+	<button class="btn btn-outline-success mt-4" on:click={createRoom} disabled={isBtnDisabled}>Create{#if isBtnDisabled} ⌛{/if}</button>
 {/if}

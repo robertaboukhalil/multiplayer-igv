@@ -1,6 +1,7 @@
 <script>
 import { onMount } from "svelte";
 import { debounce } from "debounce";
+import localforage from "localforage";
 import { getColor, copyToClipboard, GENOMES, IGV_DEFAULTS } from "./utils";
 import Cursor from "./Cursor.svelte";
 
@@ -114,7 +115,7 @@ function join() {
 	});
 
 	// Process incoming messages
-	ws.addEventListener("message", event => {
+	ws.addEventListener("message", async event => {
 		let data = JSON.parse(event.data);
 		if(data.error)
 			return console.error("WebSocket Error:", data.error);
@@ -122,9 +123,12 @@ function join() {
 		// Wait for IGV settings before initializing IGV
 		if(data.igvinit) {
 			igvInit(data.igvinit);
-		// Process info about this room
+		// Process info about this room and remember it
 		} else if(data.init) {
 			roomName = data.init.roomName;
+			const rooms = await localforage.getItem("rooms") || []
+			if(roomID && rooms.filter(room => room.id === roomID).length === 0)
+				await localforage.setItem("rooms", rooms.concat([{ id: roomID, name: roomName }]));
 		// Process user joining / leaving the room
 		} else if(data.joined) {
 			console.warn("Joined:", data);
@@ -134,7 +138,7 @@ function join() {
 			delete cursors[data.quit];
 			cursors = cursors;  // force re-render
 		} else if (data.ready) {
-			console.log("Ready.");
+			console.log("Ready");
 		// Otherwise, the message is to update a setting
 		} else {
 			handleMessage(data);
@@ -283,7 +287,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 				<br />
 			{/if}
 		{/each}
-		<a class="btn btn-sm btn-outline-secondary mt-3" href="?room=">Leave</a>
+		<a class="btn btn-sm btn-outline-secondary mt-3" href="/">Leave</a>
 	</div>
 </div>
 
