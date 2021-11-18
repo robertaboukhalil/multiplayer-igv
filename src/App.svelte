@@ -24,7 +24,11 @@ let isBtnDisabled = false;  // Whether form buttons should be enabled
 
 // Save user's name
 async function saveUser() {
-	userID = `${ulid()}:${userName || "anonymous"}`;
+	const newName = `${ulid()}:${userName || "anonymous"}`;
+	if(newName.length > 64)
+		alert("Name too long");
+	else
+		userID = newName;
 }
 
 // Create new room
@@ -87,13 +91,13 @@ onMount(async () => {
 	<form on:submit|preventDefault={createRoom}>
 		<div class="input-group mb-3">
 			<span class="input-group-text">Room name:</span>
-			<input type="text" class="form-control" placeholder="Enter a room name" bind:value={roomName}>
+			<!-- svelte-ignore a11y-autofocus -->
+			<input type="text" class="form-control" placeholder="Enter a room name" bind:value={roomName} autofocus>
 		</div>
 		<div class="input-group mb-3">
 			<span class="input-group-text">Your name:</span>
 			<input type="text" class="form-control" placeholder="Enter your name" bind:value={userName}>
 		</div>
 	</form>
-
 	<button class="btn btn-outline-success mt-4" on:click={createRoom} disabled={isBtnDisabled}>Create{#if isBtnDisabled} ⌛{/if}</button>
 {/if}
