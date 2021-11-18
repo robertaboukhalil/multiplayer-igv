@@ -34,9 +34,15 @@ let cursors = {};                // Location of all cursors: { username: { x: 10
 // ===========================================================================
 
 // Setup IGV
-function igvInit() {
-	igv.createBrowser(divIGV, igvSettings).then(br => {
-		igvBrowser = br;
+function igvInit(settings) {
+	// Update default settings as needed
+	for(let key in settings)
+		if(settings[key])
+			igvSettings[key] = settings[key];
+
+	// Create IGV instance
+	igv.createBrowser(divIGV, igvSettings).then(browser => {
+		igvBrowser = browser;
 		console.log("Created IGV browser", igvSettings);
 
 		// Listen to events
@@ -46,15 +52,22 @@ function igvInit() {
 	});
 }
 
+// Broadcast a locus change (called by IGV)
 function igvLocusChange() {
-	// Don't broadcast a locus change if it hasn't changed!
-	const locusCurr = igvBrowser.currentLoci().join(" ");
-	if(igvLocusPrev === locusCurr)
+	// Don't broadcast if locus hasn't changed!
+	const locus = igvBrowser.currentLoci().join(" ");
+	if(igvLocusPrev === locus)
 		return;
-	// Broadcast the locus change
-	console.log("Set locus =", locusCurr);
-	igvLocusPrev = locusCurr;
-	broadcast({ locus: locusCurr });
+
+	console.log("Set locus =", locus);
+	igvLocusPrev = locus;
+	broadcast({ locus: locus });
+}
+
+// Broadcast a ref genome change (called when dropdown changes)
+function igvRefChange() {
+	console.log("Set ref genome =", igvReference);
+	broadcast({ reference: igvReference });
 }
 
 // TODO:
@@ -73,6 +86,7 @@ function broadcast(data) {
 	webSocket.send(JSON.stringify(data));
 }
 
+// Connect to the backend via WebSockets
 function join() {
 	let ws = new WebSocket(`wss://${window.location.host}/api/rooms/${roomname}/websocket`);
 	let rejoined = false;
@@ -102,30 +116,23 @@ function join() {
 		if(data.error)
 			return console.error("WebSocket Error:", data.error);
 
-		// First thing we expect from the server are the IGV settings
+		// Wait for IGV settings before initializing IGV
 		if(data.igvinit) {
-			// Update default settings as needed
-			for(let key in data.igvinit)
-				if(data.igvinit[key])
-					igvSettings[key] = data.igvinit[key];
-			// Initialize IGV
-			return igvInit();
-		}
-
+			igvInit(data.igvinit);
 		// Process user joining / leaving the room
-		if(data.joined)
-			return console.warn("Joined:", data);
-		if(data.quit) {
+		} else if(data.joined) {
+			console.warn("Joined:", data);
+			cursors[data.joined] = {};  // make sure the new user is listed on the side
+		} else if(data.quit) {
 			console.warn("Quit:", data);
 			delete cursors[data.quit];
 			cursors = cursors;  // force re-render
-			return;
-		}
-		if (data.ready)
-			return console.log("Ready.");
-
+		} else if (data.ready) {
+			console.log("Ready.");
 		// Otherwise, the message is to update a setting
-		handleMessage(data);
+		} else {
+			handleMessage(data);
+		}
 	});
 
 	ws.addEventListener("close", event => {
@@ -144,33 +151,35 @@ function join() {
 // ===========================================================================
 
 function handleMessage(data) {
-	// Update cursor
-	if(data.cursor != null)
+	// Update cursor position
+	if(data.cursor != null) {
 		updateCursor(data);
 
 	// Update locus only if it's different than where I am
-	else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus)
-			igvBrowser.search(data.locus);
+	} else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus) {
+		igvBrowser.search(data.locus);
 
-	// // Update ref genome
-	// else if(data.reference != null) {
-	// 	igvReference = data.reference;
-	// 	igvBrowser.loadGenome(GENOMES[data.reference]);
-	// }
+	// Update ref genome
+	} else if(data.reference != null) {
+		igvReference = data.reference;
+		igvBrowser.loadGenome(GENOMES[data.reference]);
+	}
 
+	// Unknown message
 	else {
-		console.error("Ignoring message:", data)
+		console.warn("Ignoring message:", data)
 	}
 }
 
+// Update a cursor's position
 function updateCursor(data) {
-	// Don't update own cursor
+	// Basic input validation + don't update own cursor
 	if(data.name === username)
 		return;
-	// If we haven't seen this cursor before
 	if(!(data.name in cursors))
 		cursors[data.name] = {};
 
+	// Move cursor to new location (or hide it)
 	const [x, y, timestamp] = [data.cursor.x, data.cursor.y, data.timestamp];
 	if(x == null || y == null) {
 		delete cursors[data.name];
@@ -193,12 +202,6 @@ onMount(() => {
 	// Override default pointer when user is within the container div
 	divContainer.style.cursor = `url('data:image/svg+xml;base64,${btoa(svgCursor.outerHTML)}'), pointer`;
 });
-
-// When user changes ref genome
-function handleRefGenome() {
-	console.log("Set ref genome =", igvReference);
-	// broadcast({ reference: igvReference });
-}
 
 // When user moves their pointer
 function handlePointerMove(e) {
@@ -285,7 +288,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<a class="btn btn-sm btn-outline-secondary mt-3" href="?room=">Leave</a>
 
 		<h5 class="mt-5">IGV Options</h5>
-		<select class="form-select" aria-label="Choose a reference genome" bind:value={igvReference} on:change={handleRefGenome}>
+		<select class="form-select" aria-label="Choose a reference genome" bind:value={igvReference} on:change={igvRefChange}>
 			<optgroup label="Genome (maintains tracks but resets locus)">
 				{#each Object.keys(GENOMES) as genomeID}
 					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
