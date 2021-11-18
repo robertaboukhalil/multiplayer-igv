@@ -77,6 +77,10 @@ onMount(async () => {
 		{#each rooms as room}
 			<a href="?room={room.id}">{room.name}</a><br />
 		{/each}
+		<button class="btn btn-sm btn-outline-secondary mt-3" on:click={async () => {
+			rooms = [];
+			await localforage.setItem("rooms", []);
+		}}>Clear</button>
 	{/if}
 
 	<h5 class="mt-5">Create a new room</h5>
