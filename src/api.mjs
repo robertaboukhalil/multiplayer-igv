@@ -3,7 +3,7 @@
 
 import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
 import manifestJSON from "__STATIC_CONTENT_MANIFEST";
-const IGV_OPTIONS = ["locus", "genome"];
+const IGV_OPTIONS = ["locus", "reference"];
 
 
 // =============================================================================
@@ -85,11 +85,15 @@ export class IGVRoom {
 				session.blockedMessages.push(JSON.stringify({ joined: otherSession.name }));
 		});
 
-		// Initialize IGV params
+		// -------------------------------------------------------------------------
+		// Get the current state (IGV options + cursors) so we can send it to a new user
+		// -------------------------------------------------------------------------
+		let settings = {};
 		for(let setting of IGV_OPTIONS) {
 			const data = await this.storage.get(setting);
-			session.blockedMessages.push(JSON.stringify({ [setting]: data }));
+			settings[setting] = data;
 		}
+		session.blockedMessages.push(JSON.stringify({ igvinit: settings }));
 
 		// Initialize (and cleanup) cursor positions
 		let cursorsToDelete = [];
