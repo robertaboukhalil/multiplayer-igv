@@ -15,6 +15,9 @@ export let userID;
 // WebSockets
 let webSocket = null;
 
+// Room
+let roomName = "";               // Room name
+
 // IGV
 let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
 let igvBrowser = {};             // IGV object
@@ -119,6 +122,9 @@ function join() {
 		// Wait for IGV settings before initializing IGV
 		if(data.igvinit) {
 			igvInit(data.igvinit);
+		// Process info about this room
+		} else if(data.init) {
+			roomName = data.init.roomName;
 		// Process user joining / leaving the room
 		} else if(data.joined) {
 			console.warn("Joined:", data);
@@ -259,6 +265,8 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 			Name: ?<br />
 			Reference Genome: {GENOMES[igvGenome].name}
 		{/if}
+		<h5>Room</h5>
+		Name: <strong>{roomName}</strong>
 
 		<h5 class="mt-5">Share</h5>
 		<div class="input-group">

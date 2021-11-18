@@ -26,17 +26,16 @@ async function saveUser() {
 	userID = `${ulid()}:${userName || "anonymous"}`;
 }
 
-// Create a new room and redirect to it
+// Create new room
 async function createRoom() {
 	isBtnDisabled = true;
-	const newRoomID = await fetch("/api/rooms", {
+	roomID = await fetch("/api/rooms", {
 		method: "POST",
 		body: JSON.stringify({ roomName })
 	}).then(d => d.text());
+	saveUser();
 
-	const url = new URL(window.location);
-	url.searchParams.set("room", newRoomID);
-	window.location = String(url);
+	window.history.pushState({}, null, `?room=${roomID}`);
 }
 
 // On load
@@ -81,7 +80,7 @@ onMount(() => {
 	{/if}
 
 	<h5 class="mt-5">Create a new room</h5>
-	<form on:submit|preventDefault={saveUser}>
+	<form on:submit|preventDefault={createRoom}>
 		<div class="input-group mb-3">
 			<span class="input-group-text">Room name</span>
 			<input type="text" class="form-control" bind:value={roomName}>
@@ -90,18 +89,7 @@ onMount(() => {
 			<span class="input-group-text">Your name:</span>
 			<input type="text" class="form-control" bind:value={userName}>
 		</div>
-		<!-- <div class="input-group mb-3">
-			<span class="input-group-text">Reference Genome</span>
-			<select class="form-select" aria-label="Choose a reference genome" bind:value={genome}>
-				<optgroup label="Genome">
-					{#each Object.keys(GENOMES) as genomeID}
-						<option value="{genomeID}">{GENOMES[genomeID].name}</option>
-					{/each}
-				</optgroup>
-			</select>
-		</div> -->
 	</form>
-
 
 	<button class="btn btn-outline-success mt-4" on:click={createRoom} disabled={isBtnDisabled}>Create</button>
 {/if}

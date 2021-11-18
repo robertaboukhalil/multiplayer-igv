@@ -3,7 +3,7 @@
 
 import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
 import manifestJSON from "__STATIC_CONTENT_MANIFEST";
-const IGV_OPTIONS = ["locus", "genome"];
+const IGV_OPTIONS = ["locus"];
 
 
 // =============================================================================
@@ -63,8 +63,8 @@ export class IGVRoom {
 
 				// We're creating a new room and initializing settings
 				case "/init": {
-					await this.storage.put("genome", "hg19");
-					await this.storage.put("name", "SUP");
+					const data = await request.json();
+					await this.storage.put("name", data.roomName || "Untitled");
 					return new Response(this.id.toString(), {status: 200});
 				}
 
@@ -102,6 +102,9 @@ export class IGVRoom {
 			settings[setting] = data;
 		}
 		session.blockedMessages.push(JSON.stringify({ igvinit: settings }));
+		session.blockedMessages.push(JSON.stringify({ init: {
+			roomName: await this.storage.get("name") || "Untitled"
+		}}));
 
 		// Initialize (and cleanup) cursor positions
 		let cursorsToDelete = [];
@@ -148,7 +151,7 @@ export class IGVRoom {
 				}
 
 				// ---------------------------------------------------------------------
-				// Update IGV options, e.g. locus and ref genome
+				// Update IGV options, e.g. locus
 				// ---------------------------------------------------------------------
 				for(let setting of IGV_OPTIONS) {
 					if(data[setting] != null) {
