@@ -11,6 +11,18 @@ export function getColor(user) {
 	return colors[Math.abs(hash(user)) % colors.length];
 }
 
+// Copy to clipboard: https://komsciguy.com/js/a-better-way-to-copy-text-to-clipboard-in-javascript/
+export function copyToClipboard(text, callback) {
+	const listener = function(ev) {
+		ev.preventDefault();
+		ev.clipboardData.setData("text/plain", text);
+	};
+	document.addEventListener("copy", listener);
+	document.execCommand("copy");
+	document.removeEventListener("copy", listener);
+	callback();
+}
+
 
 // =============================================================================
 // Configs

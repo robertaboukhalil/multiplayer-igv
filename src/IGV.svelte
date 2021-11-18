@@ -1,7 +1,7 @@
 <script>
 import { onMount } from "svelte";
 import { debounce } from "debounce";
-import { getColor, GENOMES, IGV_OPTIONS } from "./utils";
+import { getColor, copyToClipboard, GENOMES, IGV_OPTIONS } from "./utils";
 import Cursor from "./Cursor.svelte";
 
 export let username;
@@ -21,7 +21,7 @@ let locusNbChanges = 0;          // How many times we've changed the locus (firs
 let locusPrev = null;            // Last locus (used to deduplicate messages)
 let changingRegion = false;      // Whether user is currently changing the locus
 let changingRegionTimer = null;  // Timer used to debounce updates to locus
-let genome = "hg19";
+let reference = "hg19";          // Reference genome currently used
 
 // UI
 let cursor;                      // Current user's cursor element
@@ -31,7 +31,7 @@ let isDoneCopy = false;          // Whether we're copying to clipboard
 
 
 // ---------------------------------------------------------------------------
-// Utilities
+// WebSocket Management
 // ---------------------------------------------------------------------------
 
 // Send WebSocket message
@@ -41,31 +41,10 @@ function broadcast(data) {
 	webSocket.send(JSON.stringify(data));
 }
 
-// Copy to clipboard: https://komsciguy.com/js/a-better-way-to-copy-text-to-clipboard-in-javascript/
-function copyToClipboard(text) {
-	const listener = function(ev) {
-		ev.preventDefault();
-		ev.clipboardData.setData("text/plain", text);
-	};
-	document.addEventListener("copy", listener);
-	document.execCommand("copy");
-	document.removeEventListener("copy", listener);
-
-	// Update UI
-	isDoneCopy = true;
-	setTimeout(() => isDoneCopy = false, 800);
-}
-
-
-// ---------------------------------------------------------------------------
-// WebSocket Management
-// ---------------------------------------------------------------------------
-
 function join() {
 	let ws = new WebSocket(`wss://${window.location.host}/api/rooms/${roomname}/websocket`);
 	let rejoined = false;
 	let startTime = Date.now();
-
 	let rejoin = async () => {
 		if (!rejoined) {
 			rejoined = true;
@@ -132,9 +111,9 @@ function handleMessage(data) {
 	}
 
 	// Update ref genome
-	else if(data.genome != null) {
-		genome = data.genome;
-		browser.loadGenome(GENOMES[data.genome]);
+	else if(data.reference != null) {
+		reference = data.reference;
+		browser.loadGenome(GENOMES[data.reference]);
 	}
 
 	// Unrecognized
@@ -211,8 +190,8 @@ onMount(() => {
 
 // When user changes ref genome
 function handleRefGenome() {
-	console.log("Set ref genome =", genome);
-	broadcast({ genome });
+	console.log("Set ref genome =", reference);
+	broadcast({ reference });
 }
 
 // When user moves their pointer
@@ -278,7 +257,11 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<h5>Share</h5>
 		<div class="input-group mb-5">
 			<input type="text" class="form-control form-control-sm" aria-label="URL to share with others" aria-describedby="button-share" value={String(window.location)} disabled>
-			<button class="btn btn-sm btn-primary" type="button" id="button-share" on:click={() => copyToClipboard(String(window.location))}>
+			<button class="btn btn-sm btn-primary" type="button" id="button-share" on:click={() => copyToClipboard(String(window.location), () => {
+				// Update UI
+				isDoneCopy = true;
+				setTimeout(() => isDoneCopy = false, 800);
+			})}>
 				Copy URL {#if isDoneCopy}✓{/if}
 			</button>
 		</div>
@@ -296,7 +279,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<a class="btn btn-sm btn-outline-secondary mt-3" href="?room=">Leave</a>
 
 		<h5 class="mt-5">IGV Options</h5>
-		<select class="form-select" aria-label="Choose a reference genome" bind:value={genome} on:change={handleRefGenome}>
+		<select class="form-select" aria-label="Choose a reference genome" bind:value={reference} on:change={handleRefGenome}>
 			<optgroup label="Genome (maintains tracks but resets locus)">
 				{#each Object.keys(GENOMES) as genomeID}
 					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
