@@ -48,7 +48,7 @@ export const GENOMES = {
 };
 
 // Default IGV options
-export const IGV_OPTIONS = {
+export const IGV_DEFAULTS = {
 	reference: GENOMES.hg19,
 	locus: "8:128,750,948-128,751,025",
 	tracks: [{

@@ -1,21 +1,22 @@
 <script>
 import { onMount } from "svelte";
 import { debounce } from "debounce";
-import { getColor, copyToClipboard, GENOMES, IGV_OPTIONS } from "./utils";
+import { getColor, copyToClipboard, GENOMES, IGV_DEFAULTS } from "./utils";
 import Cursor from "./Cursor.svelte";
 
 export let username;
 export let roomname;
 
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // State
-// ---------------------------------------------------------------------------
+// ===========================================================================
 
 // WebSockets
 let webSocket = null;
 
 // IGV
+let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
 let browser = {};                // IGV object
 let locusNbChanges = 0;          // How many times we've changed the locus (first time == initializing)
 let locusPrev = null;            // Last locus (used to deduplicate messages)
@@ -24,15 +25,16 @@ let changingRegionTimer = null;  // Timer used to debounce updates to locus
 let reference = "hg19";          // Reference genome currently used
 
 // UI
+let divIGV;                      // IGV element
+let divContainer;                // Container element
 let cursor;                      // Current user's cursor element
-let container;                   // Element #container
 let cursors = {};                // { username: { x: 100, y: 100, timestamp: 123 } }
 let isDoneCopy = false;          // Whether we're copying to clipboard
 
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // WebSocket Management
-// ---------------------------------------------------------------------------
+// ===========================================================================
 
 // Send WebSocket message
 function broadcast(data) {
@@ -95,9 +97,9 @@ function join() {
 }
 
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // Handle messages
-// ---------------------------------------------------------------------------
+// ===========================================================================
 
 function handleMessage(data) {
 	// Update cursor
@@ -140,9 +142,9 @@ function updateCursor(data) {
 }
 
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // Event handlers
-// ---------------------------------------------------------------------------
+// ===========================================================================
 
 // On page load
 onMount(() => {
@@ -198,7 +200,7 @@ function handleRefGenome() {
 function handlePointerMove(e) {
 	// Detect going outside the container
 	let x = e.clientX, y = e.clientY;
-	if(x > container.clientWidth || y > container.clientHeight) {
+	if(x > divContainer.clientWidth || y > divContainer.clientHeight) {
 		x = null;
 		y = null;
 	} else {
@@ -211,7 +213,7 @@ function handlePointerMove(e) {
 
 // When user leaves container area
 function handlePointerLeave(e) {
-	if(e.clientX <= container.clientWidth || e.clientY <= container.clientHeight)
+	if(e.clientX <= divContainer.clientWidth || e.clientY <= divContainer.clientHeight)
 		return;
 	broadcast({ cursor: { x: null, y: null } });
 }
@@ -250,8 +252,8 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 
 <!-- Shared container -->
 <div style="display:flex">
-	<div id="container" bind:this={container} on:pointermove={handlePointerMove} on:pointerleave={handlePointerLeave}>
-		<div id="igvDiv"></div>
+	<div id="container" bind:this={divContainer} on:pointermove={handlePointerMove} on:pointerleave={handlePointerLeave}>
+		<div bind:this={divIGV}></div>
 	</div>
 	<div id="users">
 		<h5>Share</h5>
