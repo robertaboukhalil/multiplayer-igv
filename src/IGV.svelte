@@ -1,40 +1,11 @@
 <script>
 import { onMount } from "svelte";
 import { debounce } from "debounce";
-import { getColor } from "./utils";
+import { getColor, GENOMES, IGV_OPTIONS } from "./utils";
 import Cursor from "./Cursor.svelte";
 
 export let username;
 export let roomname;
-
-
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-const IGV_OPTIONS = {
-	reference: {
-		id: "hg19",
-		fastaURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/1kg_v37/human_g1k_v37_decoy.fasta",
-		cytobandURL: "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/b37/b37_cytoband.txt"
-	},
-	locus: "8:128,750,948-128,751,025",
-	tracks: [{
-		type: 'alignment',
-		format: 'cram',
-		url: 'https://s3.amazonaws.com/1000genomes/phase3/data/HG00096/exome_alignment/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam.cram',
-		indexURL: 'https://s3.amazonaws.com/1000genomes/phase3/data/HG00096/exome_alignment/HG00096.mapped.ILLUMINA.bwa.GBR.exome.20120522.bam.cram.crai',
-		name: 'HG00096',
-		displayMode: "SQUISHED",
-		sort: {
-			chr: "chr8",
-			position: 128750986,
-			option: "BASE",
-			direction: "ASC"
-		},
-		height: 600
-	}]
-};
 
 
 // ---------------------------------------------------------------------------
