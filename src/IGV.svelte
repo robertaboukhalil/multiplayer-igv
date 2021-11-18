@@ -4,8 +4,8 @@ import { debounce } from "debounce";
 import { getColor, copyToClipboard, GENOMES, IGV_DEFAULTS } from "./utils";
 import Cursor from "./Cursor.svelte";
 
-export let username;
-export let roomname;
+export let roomID;
+export let userID;
 
 
 // ===========================================================================
@@ -26,7 +26,7 @@ let divIGV;                      // IGV element
 let divContainer;                // Container element
 let svgCursor;                   // Current user's cursor element
 let isDoneCopy = false;          // Whether we're copying to clipboard
-let cursors = {};                // Location of all cursors: { username: { x: 100, y: 100, timestamp: 123 } }
+let cursors = {};                // Location of all cursors: { userID: { x: 100, y: 100, timestamp: 123 } }
 
 
 // ===========================================================================
@@ -88,7 +88,7 @@ function broadcast(data) {
 
 // Connect to the backend via WebSockets
 function join() {
-	let ws = new WebSocket(`wss://${window.location.host}/api/rooms/${roomname}`);
+	let ws = new WebSocket(`wss://${window.location.host}/api/rooms/${roomID}`);
 	let rejoined = false;
 	let startTime = Date.now();
 	let rejoin = async () => {
@@ -107,7 +107,7 @@ function join() {
 	// When open connection, send user's name
 	ws.addEventListener("open", event => {
 		webSocket = ws;
-		ws.send(JSON.stringify({ name: username }));
+		ws.send(JSON.stringify({ name: userID }));
 	});
 
 	// Process incoming messages
@@ -165,7 +165,7 @@ function handleMessage(data) {
 // Update a cursor's position
 function updateCursor(data) {
 	// Basic input validation + don't update own cursor
-	if(data.name === username)
+	if(data.name === userID)
 		return;
 	if(!(data.name in cursors))
 		cursors[data.name] = {};
@@ -234,7 +234,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 	width="24"
 	height="36"
 	viewBox="0 0 24 36"
-	fill={getColor(username)}
+	fill={getColor(userID)}
 	xmlns="http://www.w3.org/2000/svg"
 >
 	<path d="M 8.553 13.433 L 11.511 19.256 L 9.083 20.717 L 6.176 14.382 L 2.433 17.229 L 2.433 1.544 L 12.79 12.907 L 8.553 13.433 Z"/>
@@ -254,8 +254,14 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<div bind:this={divIGV}></div>
 	</div>
 	<div id="users">
-		<h5>Share</h5>
-		<div class="input-group mb-5">
+		<h5>Info</h5>
+		{#if igvGenome}
+			Name: ?<br />
+			Reference Genome: {GENOMES[igvGenome].name}
+		{/if}
+
+		<h5 class="mt-5">Share</h5>
+		<div class="input-group">
 			<input type="text" class="form-control form-control-sm" aria-label="URL to share with others" aria-describedby="button-share" value={String(window.location)} disabled>
 			<button class="btn btn-sm btn-primary" type="button" id="button-share" on:click={() => copyToClipboard(String(window.location), () => {
 				// Update UI
@@ -266,22 +272,17 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 			</button>
 		</div>
 
-		<h5>Connected Users</h5>
-		{#each Object.keys(cursors) as name}
-			{#if cursors[name].timestamp == null || new Date().getTime() - cursors[name].timestamp < 1000000}
-				<span style="color: {getColor(name)}">&#11044;</span> {name.split(":")[1]}
-				{#if name === username}
+		<h5 class="mt-5">Connected Users</h5>
+		{#each Object.keys(cursors) as id}
+			{#if cursors[id].timestamp == null || new Date().getTime() - cursors[id].timestamp < 1000000}
+				<span style="color: {getColor(id)}">&#11044;</span> {id.split(":")[1]}
+				{#if id === userID}
 					<strong>(me)</strong>
 				{/if}
 				<br />
 			{/if}
 		{/each}
 		<a class="btn btn-sm btn-outline-secondary mt-3" href="?room=">Leave</a>
-
-		<h5 class="mt-5">IGV</h5>
-		{#if igvGenome}
-			Genome: {GENOMES[igvGenome].name}
-		{/if}
 	</div>
 </div>
 
