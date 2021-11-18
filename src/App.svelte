@@ -1,60 +1,76 @@
 <script>
 import { ulid } from "ulid";
-import localforage from "localforage";
 import { onMount } from "svelte";
-import { GENOMES } from "./utils";
 import IGV from "./IGV.svelte";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-let username = null;
-let roomname = new URL(window.location).searchParams.get("room");
-let disabled = false;
-let rooms = [];
-let usernameNew;
+
+// =============================================================================
+// State
+// =============================================================================
+
+let roomID = new URL(window.location).searchParams.get("room");
+let roomName = "My IGV View";  // Room name chosen by user
+let userID = null;             // User ID, i.e. <uuid>:<user name>
+let userName = "anonymous";    // Name chosen by user
+let rooms = [];                // Recently seen rooms
+let isBtnDisabled = false;     // Whether form buttons should be enabled
+
+
+// =============================================================================
+// Main logic
+// =============================================================================
+
+// Save user's name
+async function saveUser() {
+	userID = `${ulid()}:${userName || "anonymous"}`;
+}
 
 // Create a new room and redirect to it
 async function createRoom() {
-	disabled = true;
-	const newRoomID = await fetch("/api/rooms", { method: "POST"}).then(d => d.text());
+	isBtnDisabled = true;
+	const newRoomID = await fetch("/api/rooms", {
+		method: "POST",
+		body: JSON.stringify({ roomName })
+	}).then(d => d.text());
 
 	const url = new URL(window.location);
 	url.searchParams.set("room", newRoomID);
 	window.location = String(url);
 }
 
-// Save user's name
-async function saveUser(name) {
-	if(!name)
-		return;
-	username = `${ulid()}:${name}`;
-}
-
-// Handle pressing Enter in name textbox
-function handleKeyDown(e) {
-	if (e.key === "Enter")
-		saveUser(usernameNew);
-}
-
-// On load, add room to local history if not seen before
-onMount(async () => {
-	rooms = await localforage.getItem("rooms") || [];
-	if(roomname != "" && roomname != null && !rooms.includes(roomname)) {
-		await localforage.setItem("rooms", rooms.concat([ roomname ]));
-	}
+// On load
+onMount(() => {
+	// TODO:
+	// rooms = ?
 });
+
+
+// =============================================================================
+// UI
+// =============================================================================
 </script>
 
-{#if roomname && username}
-	<IGV {username} {roomname} />
-{:else if roomname && !username}
-	<div class="input-group mb-3">
-		<span class="input-group-text" id="input-name">Your name:</span>
-		<!-- svelte-ignore a11y-autofocus -->
-		<input type="text" class="form-control" aria-label="Username" aria-describedby="input-name" bind:value={usernameNew} on:keydown={handleKeyDown} autocomplete="off" autofocus>
-	</div>
+<!-- Room and user ID defined => show the room -->
+{#if roomID && userID}
 
-	<button class="btn btn-outline-success mt-4" on:click={() => saveUser(usernameNew)} {disabled}>Save</button>
+	<IGV {roomID} {userID} />
+
+<!-- Have room ID but missing user ID => ask user for their name -->
+{:else if roomID && !userID}
+
+	<form on:submit|preventDefault={saveUser}>
+		<div class="input-group mb-3">
+			<span class="input-group-text">Your name:</span>
+			<!-- svelte-ignore a11y-autofocus -->
+			<input type="text" class="form-control" bind:value={userName} autocomplete="off" autofocus>
+		</div>
+	</form>
+	<button class="btn btn-outline-success mt-4" on:click={saveUser} disabled={isBtnDisabled}>Save</button>
+
+<!-- Other show landing page -->
 {:else}
+
 	<h5 class="mt-3">Recently viewed rooms</h5>
 	{#if rooms.length == 0}
 		<span class="text-muted">None</span><br />
@@ -64,5 +80,28 @@ onMount(async () => {
 		{/each}
 	{/if}
 
-	<button class="btn btn-outline-success mt-4" on:click={createRoom} {disabled}>Create a new room</button>
+	<h5 class="mt-5">Create a new room</h5>
+	<form on:submit|preventDefault={saveUser}>
+		<div class="input-group mb-3">
+			<span class="input-group-text">Room name</span>
+			<input type="text" class="form-control" bind:value={roomName}>
+		</div>
+		<div class="input-group mb-3">
+			<span class="input-group-text">Your name:</span>
+			<input type="text" class="form-control" bind:value={userName}>
+		</div>
+		<!-- <div class="input-group mb-3">
+			<span class="input-group-text">Reference Genome</span>
+			<select class="form-select" aria-label="Choose a reference genome" bind:value={genome}>
+				<optgroup label="Genome">
+					{#each Object.keys(GENOMES) as genomeID}
+						<option value="{genomeID}">{GENOMES[genomeID].name}</option>
+					{/each}
+				</optgroup>
+			</select>
+		</div> -->
+	</form>
+
+
+	<button class="btn btn-outline-success mt-4" on:click={createRoom} disabled={isBtnDisabled}>Create</button>
 {/if}
