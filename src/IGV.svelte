@@ -260,27 +260,20 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<div bind:this={divIGV}></div>
 	</div>
 	<div id="users">
-		<h5>Info</h5>
-		{#if igvGenome}
-			Name: ?<br />
-			Reference Genome: {GENOMES[igvGenome].name}
-		{/if}
-		<h5>Room</h5>
-		Name: <strong>{roomName}</strong>
-
-		<h5 class="mt-5">Share</h5>
-		<div class="input-group">
-			<input type="text" class="form-control form-control-sm" aria-label="URL to share with others" aria-describedby="button-share" value={String(window.location)} disabled>
-			<button class="btn btn-sm btn-primary" type="button" id="button-share" on:click={() => copyToClipboard(String(window.location), () => {
+		<h3>{roomName}</h3>
+		<div class="input-group input-group-sm">
+			<span class="input-group-text">Shareable Link:</span>
+			<input type="text" class="form-control" value={String(window.location)}>
+			<button class="btn btn-primary" type="button" on:click={() => copyToClipboard(String(window.location), () => {
 				// Update UI
 				isDoneCopy = true;
 				setTimeout(() => isDoneCopy = false, 800);
 			})}>
-				Copy URL {#if isDoneCopy}✓{/if}
+				Copy {#if isDoneCopy}✓{/if}
 			</button>
 		</div>
 
-		<h5 class="mt-5">Connected Users</h5>
+		<h5 class="mt-4">Connected Users</h5>
 		{#each Object.keys(cursors) as id}
 			{#if cursors[id].timestamp == null || new Date().getTime() - cursors[id].timestamp < 1000000}
 				<span style="color: {getColor(id)}">&#11044;</span> {id.split(":")[1]}
