@@ -65,6 +65,7 @@ export class IGVRoom {
 				case "/init": {
 					const data = await request.json();
 					await this.storage.put("name", data.roomName || "Untitled");
+					await this.storage.put("time_created", new Date().getTime());
 					return new Response(this.id.toString(), {status: 200});
 				}
 
@@ -103,7 +104,8 @@ export class IGVRoom {
 		}
 		session.blockedMessages.push(JSON.stringify({ igvinit: settings }));
 		session.blockedMessages.push(JSON.stringify({ init: {
-			roomName: await this.storage.get("name") || "Untitled"
+			roomName: await this.storage.get("name"),
+			timeCreated: await this.storage.get("time_created")
 		}}));
 
 		// Initialize (and cleanup) cursor positions

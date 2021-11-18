@@ -6,6 +6,11 @@ Work in progress.
 
 * https://twitter.com/RobAboukhalil/status/1458835953280163850
 
+### Deploy
+
+* First time: `wrangler publish --new-class IGVRoom`
+* Every other time: `wrangler publish`
+
 ### Docs
 
 * https://github.com/cloudflare/workers-chat-demo
