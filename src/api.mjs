@@ -3,6 +3,7 @@
 
 import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
 import manifestJSON from "__STATIC_CONTENT_MANIFEST";
+const IGV_OPTIONS = ["locus", "genome"];
 
 
 // =============================================================================
@@ -84,9 +85,11 @@ export class IGVRoom {
 				session.blockedMessages.push(JSON.stringify({ joined: otherSession.name }));
 		});
 
-		// Initialize locus position
-		const locus = await this.storage.get("locus");
-		session.blockedMessages.push(JSON.stringify({ locus }));
+		// Initialize IGV params
+		for(let setting of IGV_OPTIONS) {
+			const data = await this.storage.get(setting);
+			session.blockedMessages.push(JSON.stringify({ [setting]: data }));
+		}
 
 		// Initialize (and cleanup) cursor positions
 		let cursorsToDelete = [];
@@ -133,12 +136,14 @@ export class IGVRoom {
 				}
 
 				// ---------------------------------------------------------------------
-				// Update locus
+				// Update IGV options, e.g. locus and ref genome
 				// ---------------------------------------------------------------------
-				if(data.locus != null) {
-					await this.storage.put("locus", data.locus);
-					this.broadcast(data);
-					return;
+				for(let setting of IGV_OPTIONS) {
+					if(data[setting] != null) {
+						await this.storage.put(setting, data[setting]);
+						this.broadcast(data);
+						return;
+					}
 				}
 
 				// ---------------------------------------------------------------------
