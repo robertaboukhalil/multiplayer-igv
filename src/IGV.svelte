@@ -45,17 +45,17 @@ const IGV_OPTIONS = {
 let webSocket = null;
 
 // IGV
-let browser = {};  			// IGV object
-let locusNbChanges = 0;		// How many times we've changed the locus (first time == initializing)
-let locusPrev = null;		// Last locus (used to deduplicate messages)
-let changingRegion = false; // Whether user is currently changing the locus
-let changingRegionTimer = null;
+let browser = {};                // IGV object
+let locusNbChanges = 0;          // How many times we've changed the locus (first time == initializing)
+let locusPrev = null;            // Last locus (used to deduplicate messages)
+let changingRegion = false;      // Whether user is currently changing the locus
+let changingRegionTimer = null;  // Timer used to debounce updates to locus
 
 // UI
-let cursor;					// Current user's cursor element
-let container;  			// Element #container
-let cursors = {};			// { username: { x: 100, y: 100, hidden: false } }
-let isDoneCopy = false;		// Whether we're copying to clipboard
+let cursor;                      // Current user's cursor element
+let container;                   // Element #container
+let cursors = {};                // { username: { x: 100, y: 100, timestamp: 123 } }
+let isDoneCopy = false;          // Whether we're copying to clipboard
 
 
 // ---------------------------------------------------------------------------
@@ -120,12 +120,12 @@ function join() {
 		if(data.error) {
 			console.error("WebSocket Error:", data.error);
 		} else if (data.joined) {
-			console.warn("JOINED", data);
+			console.warn("Joined:", data);
 			cursors[data.joined] = { x: 10, y: 10 };
 		} else if (data.quit) {
-			console.warn("QUIT", data);
+			console.warn("Quit:", data);
 			delete cursors[data.quit];
-			cursors = cursors;
+			cursors = cursors;  // force re-render
 		} else if (data.ready) {
 			console.log("Ready.")
 		} else {
@@ -176,7 +176,7 @@ function updateCursor(data) {
 	const [x, y, timestamp] = [data.cursor.x, data.cursor.y, data.timestamp];
 	if(x == null || y == null) {
 		delete cursors[data.name];
-		cursors = cursors;
+		cursors = cursors;  // force re-render
 	} else {
 		cursors[data.name] = { x, y, timestamp };
 	}
@@ -320,7 +320,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 	width: 700px;
 	border: 1px solid lightgray;
 	overflow-x: hidden;
-	overflow-y: scroll;
+	overflow-y: hidden;
 }
 
 #users {
