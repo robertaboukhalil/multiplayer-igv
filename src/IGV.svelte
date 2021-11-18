@@ -17,7 +17,8 @@ let webSocket = null;
 
 // IGV
 let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
-let browser = {};                // IGV object
+let igvBrowser = {};             // IGV object
+//
 let locusNbChanges = 0;          // How many times we've changed the locus (first time == initializing)
 let locusPrev = null;            // Last locus (used to deduplicate messages)
 let changingRegion = false;      // Whether user is currently changing the locus
@@ -27,9 +28,52 @@ let reference = "hg19";          // Reference genome currently used
 // UI
 let divIGV;                      // IGV element
 let divContainer;                // Container element
-let cursor;                      // Current user's cursor element
+let svgCursor;                   // Current user's cursor element
+//
 let cursors = {};                // { username: { x: 100, y: 100, timestamp: 123 } }
 let isDoneCopy = false;          // Whether we're copying to clipboard
+
+
+// ===========================================================================
+// IGV Management
+// ===========================================================================
+
+// Setup IGV
+function igvInit() {
+	igv.createBrowser(divIGV, igvSettings).then(br => {
+		igvBrowser = br;
+		console.log("Created IGV browser", igvSettings);
+
+		// // Listen to IGV events
+		// igvBrowser.on("locuschange", debounce(refFrames => {
+		// 	// If changing locus before IGV is ready, means we're just initializing the locus
+		// 	if(locusNbChanges++ < 1)
+		// 		return;
+
+		// 	// Support multi-loci!
+		// 	const locusCurr = igvBrowser.currentLoci().join(" ");
+		// 	// Don't broadcast a locus change if it hasn't changed!
+		// 	if(locusPrev === locusCurr)
+		// 		return;
+		// 	console.log("Set locus =", locusCurr);
+		// 	locusPrev = locusCurr;
+		// 	broadcast({ locus: locusCurr });
+
+		// 	// Reduce how many WebSockets messages we send
+		// 	clearTimeout(changingRegionTimer);
+		// 	changingRegion = true;
+		// 	changingRegionTimer = setTimeout(() => { changingRegion = false }, 500);
+		// }, 50));
+
+		// TODO: Sync when delete/reorder tracks
+		igvBrowser.on("trackremoved", function(tracks) {
+			console.log("Removed tracks", tracks);
+		});
+		igvBrowser.on("trackorderchanged", function(tracks) {
+			console.log("Moved tracks", tracks);
+		});
+	});
+}
 
 
 // ===========================================================================
@@ -69,21 +113,33 @@ function join() {
 	// Process incoming messages
 	ws.addEventListener("message", event => {
 		let data = JSON.parse(event.data);
+		if(data.error)
+			return console.error("WebSocket Error:", data.error);
 
-		if(data.error) {
-			console.error("WebSocket Error:", data.error);
-		} else if (data.joined) {
-			console.warn("Joined:", data);
-			cursors[data.joined] = { x: 10, y: 10 };
-		} else if (data.quit) {
+		// First thing we expect from the server are the IGV settings
+		if(data.igvinit) {
+			// Update default settings as needed
+			for(let key in data.igvinit)
+				if(data.igvinit[key])
+					igvSettings[key] = data.igvinit[key];
+			// Initialize IGV
+			return igvInit();
+		}
+
+		// Process user joining / leaving the room
+		if(data.joined)
+			return console.warn("Joined:", data);
+		if(data.quit) {
 			console.warn("Quit:", data);
 			delete cursors[data.quit];
 			cursors = cursors;  // force re-render
-		} else if (data.ready) {
-			console.log("Ready.")
-		} else {
-			handleMessage(data);
+			return;
 		}
+		if (data.ready)
+			return console.log("Ready.");
+
+		// Otherwise, the message is to update a setting
+		handleMessage(data);
 	});
 
 	ws.addEventListener("close", event => {
@@ -108,15 +164,15 @@ function handleMessage(data) {
 
 	// Update locus only if I'm not the one changing it already!
 	else if(data.locus != null) {
-		if(changingRegion === false && browser.currentLoci().join(" ") != data.locus)
-			browser.search(data.locus);
+		if(changingRegion === false && igvBrowser.currentLoci().join(" ") != data.locus)
+			igvBrowser.search(data.locus);
 	}
 
-	// Update ref genome
-	else if(data.reference != null) {
-		reference = data.reference;
-		browser.loadGenome(GENOMES[data.reference]);
-	}
+	// // Update ref genome
+	// else if(data.reference != null) {
+	// 	reference = data.reference;
+	// 	igvBrowser.loadGenome(GENOMES[data.reference]);
+	// }
 
 	// Unrecognized
 	else {
@@ -148,52 +204,17 @@ function updateCursor(data) {
 
 // On page load
 onMount(() => {
-	// Setup IGV
-	igv.createBrowser(document.getElementById("igvDiv"), IGV_OPTIONS).then(function (br) {
-		browser = br;
-		console.log("Created IGV browser");
+	// Connect to WebSocket
+	join();
 
-		// Connect to WebSocket
-		join();
-
-		// Set user pointer
-		container.style.cursor = `url('data:image/svg+xml;base64,${btoa(cursor.outerHTML)}'), pointer`;
-
-		// Listen to IGV events
-		browser.on("locuschange", debounce(refFrames => {
-			// If changing locus before IGV is ready, means we're just initializing the locus
-			if(locusNbChanges++ < 1)
-				return;
-
-			// Support multi-loci!
-			const locusCurr = browser.currentLoci().join(" ");
-			// Don't broadcast a locus change if it hasn't changed!
-			if(locusPrev === locusCurr)
-				return;
-			console.log("Set locus =", locusCurr);
-			locusPrev = locusCurr;
-			broadcast({ locus: locusCurr });
-
-			// Reduce how many WebSockets messages we send
-			clearTimeout(changingRegionTimer);
-			changingRegion = true;
-			changingRegionTimer = setTimeout(() => { changingRegion = false }, 500);
-		}, 50));
-
-		// TODO: Sync when delete/reorder tracks
-		browser.on("trackremoved", function(tracks) {
-			console.log("Removed tracks", tracks);
-		});
-		browser.on("trackorderchanged", function(tracks) {
-			console.log("Moved tracks", tracks);
-		});
-	});
+	// Override default pointer when user is within the container div
+	divContainer.style.cursor = `url('data:image/svg+xml;base64,${btoa(svgCursor.outerHTML)}'), pointer`;
 });
 
 // When user changes ref genome
 function handleRefGenome() {
 	console.log("Set ref genome =", reference);
-	broadcast({ reference });
+	// broadcast({ reference });
 }
 
 // When user moves their pointer
@@ -231,7 +252,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 <svelte:window on:beforeunload={handleUnload}/>
 
 <!-- User's custom cursor to override the default cursor with-->
-<svg bind:this={cursor}
+<svg bind:this={svgCursor}
 	style="display:none"
 	width="24"
 	height="36"
