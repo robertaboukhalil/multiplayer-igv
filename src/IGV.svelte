@@ -88,7 +88,7 @@ function broadcast(data) {
 
 // Connect to the backend via WebSockets
 function join() {
-	let ws = new WebSocket(`wss://${window.location.host}/api/rooms/${roomname}/websocket`);
+	let ws = new WebSocket(`wss://${window.location.host}/api/rooms/${roomname}`);
 	let rejoined = false;
 	let startTime = Date.now();
 	let rejoin = async () => {
@@ -152,23 +152,14 @@ function join() {
 
 function handleMessage(data) {
 	// Update cursor position
-	if(data.cursor != null) {
+	if(data.cursor != null)
 		updateCursor(data);
-
 	// Update locus only if it's different than where I am
-	} else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus) {
+	else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus)
 		igvBrowser.search(data.locus);
-
-	// Update ref genome
-	} else if(data.genome != null) {
-		igvGenome = data.genome;
-		igvBrowser.loadGenome(GENOMES[data.genome]);
-	}
-
 	// Unknown message
-	else {
+	else
 		console.warn("Ignoring message:", data)
-	}
 }
 
 // Update a cursor's position
@@ -287,14 +278,10 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		{/each}
 		<a class="btn btn-sm btn-outline-secondary mt-3" href="?room=">Leave</a>
 
-		<h5 class="mt-5">IGV Options</h5>
-		<select class="form-select" aria-label="Choose a reference genome" bind:value={igvGenome} on:change={igvRefChange}>
-			<optgroup label="Genome (maintains tracks but resets locus)">
-				{#each Object.keys(GENOMES) as genomeID}
-					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
-				{/each}
-			</optgroup>
-		</select>
+		<h5 class="mt-5">IGV</h5>
+		{#if igvGenome}
+			Genome: {GENOMES[igvGenome].name}
+		{/if}
 	</div>
 </div>
 

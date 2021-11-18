@@ -39,6 +39,7 @@ export default {
 
 export class IGVRoom {
 	constructor(controller, env) {
+		this.id = controller.id;            // ID of the object (Use .toString() to convert to hex)
 		this.storage = controller.storage;  // Durable storage
 		this.env = env;                     // Environment bindings, e.g. KV namespaces, secrets
 		this.sessions = [];                 // WebSocket sessions
@@ -60,8 +61,15 @@ export class IGVRoom {
 					return new Response(null, { status: 101, webSocket: pair[0] });
 				}
 
+				// We're creating a new room and initializing settings
+				case "/init": {
+					await this.storage.put("genome", "hg19");
+					await this.storage.put("name", "SUP");
+					return new Response(this.id.toString(), {status: 200});
+				}
+
 				default:
-					return new Response("Not found", {status: 404});
+					return new Response("Not found.", {status: 404});
 			}
 		});
 	}
@@ -258,22 +266,26 @@ async function handleApiRequest(path, request, env) {
 
 	switch(endpoint) {
 		case "rooms": {
+			let id;
+			let endpoint = "websocket";
+
 			// POST /api/rooms/
-			if(request.method == "POST" && !name)
-				return new Response(env.rooms.newUniqueId().toString());
-
+			if(request.method == "POST" && !name) {
+				id = env.rooms.newUniqueId();
+				endpoint = "init";
+	
 			// GET /api/rooms/<roomID>
-			// Each Durable Object has a 256-bit unique ID, derived or randomly generated
-			if(!name.match(/^[0-9a-f]{64}$/))
-				return new Response("Unknown document", { status: 404 });
+			} else {
+				// Each Durable Object has a 256-bit unique ID
+				if(!name.match(/^[0-9a-f]{64}$/))
+					return new Response("Unknown document", { status: 404 });
+				id = env.rooms.idFromString(name);
+			}
 
-			// Get the Durable Object stub for this room
-			const id = env.rooms.idFromString(name);
-			const room = env.rooms.get(id);
 			// Reroute API to the durable object
-			let newUrl = new URL(request.url);
-			newUrl.pathname = "/" + path.slice(2).join("/");  // path = ["rooms", "<roomID>", "websocket"]
-			return room.fetch(newUrl, request);  // newUrl = https://<hostname>/websocket
+			const room = env.rooms.get(id);
+			const newURL = `${new URL(request.url).origin}/${endpoint}`;
+			return room.fetch(newURL, request);
 		}
 
 		default:
