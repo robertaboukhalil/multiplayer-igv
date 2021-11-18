@@ -18,20 +18,15 @@ let webSocket = null;
 // IGV
 let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
 let igvBrowser = {};             // IGV object
-//
-let locusNbChanges = 0;          // How many times we've changed the locus (first time == initializing)
-let locusPrev = null;            // Last locus (used to deduplicate messages)
-let changingRegion = false;      // Whether user is currently changing the locus
-let changingRegionTimer = null;  // Timer used to debounce updates to locus
-let reference = "hg19";          // Reference genome currently used
+let igvLocusPrev = null;         // Last locus (used to deduplicate messages)
+let igvReference = "hg19";       // Reference genome currently used
 
 // UI
 let divIGV;                      // IGV element
 let divContainer;                // Container element
 let svgCursor;                   // Current user's cursor element
-//
-let cursors = {};                // { username: { x: 100, y: 100, timestamp: 123 } }
 let isDoneCopy = false;          // Whether we're copying to clipboard
+let cursors = {};                // Location of all cursors: { username: { x: 100, y: 100, timestamp: 123 } }
 
 
 // ===========================================================================
@@ -44,36 +39,27 @@ function igvInit() {
 		igvBrowser = br;
 		console.log("Created IGV browser", igvSettings);
 
-		// // Listen to IGV events
-		// igvBrowser.on("locuschange", debounce(refFrames => {
-		// 	// If changing locus before IGV is ready, means we're just initializing the locus
-		// 	if(locusNbChanges++ < 1)
-		// 		return;
-
-		// 	// Support multi-loci!
-		// 	const locusCurr = igvBrowser.currentLoci().join(" ");
-		// 	// Don't broadcast a locus change if it hasn't changed!
-		// 	if(locusPrev === locusCurr)
-		// 		return;
-		// 	console.log("Set locus =", locusCurr);
-		// 	locusPrev = locusCurr;
-		// 	broadcast({ locus: locusCurr });
-
-		// 	// Reduce how many WebSockets messages we send
-		// 	clearTimeout(changingRegionTimer);
-		// 	changingRegion = true;
-		// 	changingRegionTimer = setTimeout(() => { changingRegion = false }, 500);
-		// }, 50));
-
-		// TODO: Sync when delete/reorder tracks
-		igvBrowser.on("trackremoved", function(tracks) {
-			console.log("Removed tracks", tracks);
-		});
-		igvBrowser.on("trackorderchanged", function(tracks) {
-			console.log("Moved tracks", tracks);
-		});
+		// Listen to events
+		igvBrowser.on("locuschange", debounce(igvLocusChange, 50));
+		igvBrowser.on("trackremoved", igvTrackRemove);
+		igvBrowser.on("trackorderchanged", igvTrackOrderChanged);
 	});
 }
+
+function igvLocusChange() {
+	// Don't broadcast a locus change if it hasn't changed!
+	const locusCurr = igvBrowser.currentLoci().join(" ");
+	if(igvLocusPrev === locusCurr)
+		return;
+	// Broadcast the locus change
+	console.log("Set locus =", locusCurr);
+	igvLocusPrev = locusCurr;
+	broadcast({ locus: locusCurr });
+}
+
+// TODO:
+function igvTrackRemove(track) { console.log("Removed track:", track); }
+function igvTrackOrderChanged(tracks) { console.log("New track order:", tracks); }
 
 
 // ===========================================================================
@@ -162,21 +148,18 @@ function handleMessage(data) {
 	if(data.cursor != null)
 		updateCursor(data);
 
-	// Update locus only if I'm not the one changing it already!
-	else if(data.locus != null) {
-		if(changingRegion === false && igvBrowser.currentLoci().join(" ") != data.locus)
+	// Update locus only if it's different than where I am
+	else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus)
 			igvBrowser.search(data.locus);
-	}
 
 	// // Update ref genome
 	// else if(data.reference != null) {
-	// 	reference = data.reference;
+	// 	igvReference = data.reference;
 	// 	igvBrowser.loadGenome(GENOMES[data.reference]);
 	// }
 
-	// Unrecognized
 	else {
-		console.error("Unrecognized message:", data)
+		console.error("Ignoring message:", data)
 	}
 }
 
@@ -213,8 +196,8 @@ onMount(() => {
 
 // When user changes ref genome
 function handleRefGenome() {
-	console.log("Set ref genome =", reference);
-	// broadcast({ reference });
+	console.log("Set ref genome =", igvReference);
+	// broadcast({ reference: igvReference });
 }
 
 // When user moves their pointer
@@ -302,7 +285,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<a class="btn btn-sm btn-outline-secondary mt-3" href="?room=">Leave</a>
 
 		<h5 class="mt-5">IGV Options</h5>
-		<select class="form-select" aria-label="Choose a reference genome" bind:value={reference} on:change={handleRefGenome}>
+		<select class="form-select" aria-label="Choose a reference genome" bind:value={igvReference} on:change={handleRefGenome}>
 			<optgroup label="Genome (maintains tracks but resets locus)">
 				{#each Object.keys(GENOMES) as genomeID}
 					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
