@@ -255,20 +255,16 @@ async function handleApiRequest(path, request, env) {
 
 			// GET /api/rooms/<roomID>
 			// Each Durable Object has a 256-bit unique ID, derived or randomly generated
-			let id;
-			if(name.match(/^[0-9a-f]{64}$/))
-				id = env.rooms.idFromString(name);
-			// For now, don't allow users to enter a custom room name
-			// else if (name.length <= 32)
-			// 	id = env.rooms.idFromName(name);
-			else
+			if(!name.match(/^[0-9a-f]{64}$/))
 				return new Response("Unknown document", { status: 404 });
 
-			// Get the Durable Object stub for this room!
-			let roomObject = env.rooms.get(id);
+			// Get the Durable Object stub for this room
+			const id = env.rooms.idFromString(name);
+			const room = env.rooms.get(id);
+			// Reroute API to the durable object
 			let newUrl = new URL(request.url);
-			newUrl.pathname = "/" + path.slice(2).join("/");
-			return roomObject.fetch(newUrl, request);
+			newUrl.pathname = "/" + path.slice(2).join("/");  // path = ["rooms", "<roomID>", "websocket"]
+			return room.fetch(newUrl, request);  // newUrl = https://<hostname>/websocket
 		}
 
 		default:
