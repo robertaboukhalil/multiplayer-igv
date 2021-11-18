@@ -21,6 +21,7 @@ let locusNbChanges = 0;          // How many times we've changed the locus (firs
 let locusPrev = null;            // Last locus (used to deduplicate messages)
 let changingRegion = false;      // Whether user is currently changing the locus
 let changingRegionTimer = null;  // Timer used to debounce updates to locus
+let genome = "hg19";
 
 // UI
 let cursor;                      // Current user's cursor element
@@ -130,6 +131,12 @@ function handleMessage(data) {
 			browser.search(data.locus);
 	}
 
+	// Update ref genome
+	else if(data.genome != null) {
+		genome = data.genome;
+		browser.loadGenome(GENOMES[data.genome]);
+	}
+
 	// Unrecognized
 	else {
 		console.error("Unrecognized message:", data)
@@ -202,6 +209,12 @@ onMount(() => {
 	});
 });
 
+// When user changes ref genome
+function handleRefGenome() {
+	console.log("Set ref genome =", genome);
+	broadcast({ genome });
+}
+
 // When user moves their pointer
 function handlePointerMove(e) {
 	// Detect going outside the container
@@ -264,8 +277,8 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 	<div id="users">
 		<h5>Share</h5>
 		<div class="input-group mb-5">
-			<input type="text" class="form-control" aria-label="URL to share with others" aria-describedby="button-share" value={String(window.location)} disabled>
-			<button class="btn btn-primary" type="button" id="button-share" on:click={() => copyToClipboard(String(window.location))}>
+			<input type="text" class="form-control form-control-sm" aria-label="URL to share with others" aria-describedby="button-share" value={String(window.location)} disabled>
+			<button class="btn btn-sm btn-primary" type="button" id="button-share" on:click={() => copyToClipboard(String(window.location))}>
 				Copy URL {#if isDoneCopy}✓{/if}
 			</button>
 		</div>
@@ -280,8 +293,16 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 				<br />
 			{/if}
 		{/each}
+		<a class="btn btn-sm btn-outline-secondary mt-3" href="?room=">Leave</a>
 
-		<a class="btn btn-sm btn-outline-secondary mt-4" href="?room=">Leave</a>
+		<h5 class="mt-5">IGV Options</h5>
+		<select class="form-select" aria-label="Choose a reference genome" bind:value={genome} on:change={handleRefGenome}>
+			<optgroup label="Genome (maintains tracks but resets locus)">
+				{#each Object.keys(GENOMES) as genomeID}
+					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
+				{/each}
+			</optgroup>
+		</select>
 	</div>
 </div>
 
