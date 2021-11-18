@@ -2,6 +2,7 @@
 import { ulid } from "ulid";
 import localforage from "localforage";
 import { onMount } from "svelte";
+import { GENOMES } from "./utils";
 import IGV from "./IGV.svelte";
 import "bootstrap/dist/css/bootstrap.min.css";
 

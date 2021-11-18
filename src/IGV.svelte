@@ -19,7 +19,7 @@ let webSocket = null;
 let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
 let igvBrowser = {};             // IGV object
 let igvLocusPrev = null;         // Last locus (used to deduplicate messages)
-let igvReference = "hg19";       // Reference genome currently used
+let igvGenome;                   // Reference genome currently used
 
 // UI
 let divIGV;                      // IGV element
@@ -36,9 +36,15 @@ let cursors = {};                // Location of all cursors: { username: { x: 10
 // Setup IGV
 function igvInit(settings) {
 	// Update default settings as needed
-	for(let key in settings)
-		if(settings[key])
-			igvSettings[key] = settings[key];
+	for(let key in settings) {
+		const value = settings[key];
+		if(key === "genome") {
+			igvGenome = value || "hg19";
+			igvSettings.reference = GENOMES[igvGenome];
+		} else {
+			igvSettings[key] = value;
+		}
+	}
 
 	// Create IGV instance
 	igv.createBrowser(divIGV, igvSettings).then(browser => {
@@ -62,12 +68,6 @@ function igvLocusChange() {
 	console.log("Set locus =", locus);
 	igvLocusPrev = locus;
 	broadcast({ locus: locus });
-}
-
-// Broadcast a ref genome change (called when dropdown changes)
-function igvRefChange() {
-	console.log("Set ref genome =", igvReference);
-	broadcast({ reference: igvReference });
 }
 
 // TODO:
@@ -160,9 +160,9 @@ function handleMessage(data) {
 		igvBrowser.search(data.locus);
 
 	// Update ref genome
-	} else if(data.reference != null) {
-		igvReference = data.reference;
-		igvBrowser.loadGenome(GENOMES[data.reference]);
+	} else if(data.genome != null) {
+		igvGenome = data.genome;
+		igvBrowser.loadGenome(GENOMES[data.genome]);
 	}
 
 	// Unknown message
@@ -288,7 +288,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<a class="btn btn-sm btn-outline-secondary mt-3" href="?room=">Leave</a>
 
 		<h5 class="mt-5">IGV Options</h5>
-		<select class="form-select" aria-label="Choose a reference genome" bind:value={igvReference} on:change={igvRefChange}>
+		<select class="form-select" aria-label="Choose a reference genome" bind:value={igvGenome} on:change={igvRefChange}>
 			<optgroup label="Genome (maintains tracks but resets locus)">
 				{#each Object.keys(GENOMES) as genomeID}
 					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
