@@ -29,28 +29,25 @@ let cursors = {};                // Location of all cursors: { userID: { x: 100,
 // IGV
 let igvSettings = IGV_DEFAULTS;  // Settings object used to initialize IGV
 let igvBrowser = null;           // IGV object
-let igvLocusPrev = null;         // Last locus (used to deduplicate messages)
 let igvReady = false;            // Whether igv has been fully initialized
 
 // IGV settings that can change in the room
 const IGV_SETTINGS = {
 	"genome": {
-		get() {
-			return igvBrowser.toJSON().reference.id;
-		},
-		set(value) {
+		get: () => igvBrowser.toJSON().reference.id,
+		set: value => {
 			igvBrowser.removeAllTracks();
 			igvBrowser.loadGenome(value);
 		}
 	},
-	"showCenterGuide": {
-		get() {
-			return igvBrowser.centerLineList[0].isVisible;
-		},
-		set(value) {
-			igvBrowser.setCenterLineVisibility(value);
-		}
+	"locus": {
+		get: () => igvBrowser.currentLoci().join(" "),
+		set: value => igvBrowser.search(value)
 	},
+	"showCenterGuide": {
+		get: () => igvBrowser.centerLineList[0].isVisible,
+		set: value => igvBrowser.setCenterLineVisibility(value)
+	}
 };
 
 
@@ -78,9 +75,13 @@ function igvInit(settings) {
 		console.log("Created IGV browser", igvSettings);
 
 		// Listen to events
-		igvBrowser.on("locuschange", debounce(igvLocusChange, 50));
-		igvBrowser.on("trackremoved", igvTrackRemove);
-		igvBrowser.on("trackorderchanged", igvTrackOrderChanged);
+		igvBrowser.on("locuschange", debounce(() => {
+			igvSettings.locus = IGV_SETTINGS.locus.get();
+			console.log("Set locus ==", igvSettings.locus);
+			broadcast({ locus: igvSettings.locus });
+		}, 50));
+		// TODO: igvBrowser.on("trackremoved", igvTrackRemove);
+		// TODO: igvBrowser.on("trackorderchanged", igvTrackOrderChanged);
 	});
 }
 
@@ -91,26 +92,12 @@ function igvBroadcastChanges() {
 
 	for(let setting in IGV_SETTINGS) {
 		const value = igvSettings[setting];
-		if(value != null && value != IGV_SETTINGS[setting].get())
+		if(value != null && value != IGV_SETTINGS[setting].get()) {
+			console.log(`Set ${setting} =`, value)
 			broadcast({ [setting]: value });
+		}
 	}
 }
-
-// Broadcast a locus change (called by IGV)
-function igvLocusChange() {
-	// Don't broadcast if locus hasn't changed!
-	const locus = igvBrowser.currentLoci().join(" ");
-	if(igvLocusPrev === locus)
-		return;
-
-	console.log("Set locus =", locus);
-	igvLocusPrev = locus;
-	broadcast({ locus: locus });
-}
-
-// TODO:
-function igvTrackRemove(track) { console.log("Removed track:", track); }
-function igvTrackOrderChanged(tracks) { console.log("New track order:", tracks); }
 
 
 // ===========================================================================
@@ -196,11 +183,13 @@ function join() {
 
 function handleMessage(data) {
 	// Update IGV settings if they're non-null and have changed value
+	let updated = false;
 	for(let setting in IGV_SETTINGS) {
 		const value = data[setting];
 		if(value != null && value != IGV_SETTINGS[setting].get()) {
 			IGV_SETTINGS[setting].set(value);
 			igvSettings[setting] = value;
+			updated = true;
 		}
 	}
 
@@ -208,12 +197,8 @@ function handleMessage(data) {
 	if(data.cursor != null) {
 		updateCursor(data);
 
-	// Update locus only if it's different than where I am
-	} else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus) {
-		igvBrowser.search(data.locus);
-
 	// Unknown message
-	} else {
+	} else if(!updated) {
 		console.warn("Ignoring message:", data)
 	}
 }
