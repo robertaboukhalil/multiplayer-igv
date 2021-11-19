@@ -2,8 +2,10 @@
 import { onMount } from "svelte";
 import { debounce } from "debounce";
 import localforage from "localforage";
-import { getColor, copyToClipboard, GENOMES, IGV_DEFAULTS } from "./utils";
+import { getColor, copyToClipboard, GENOMES, IGV_DEFAULTS } from "../utils";
 import Cursor from "./Cursor.svelte";
+import FormCheckbox from "./FormCheckbox.svelte";
+import FormDropdown from "./FormDropdown.svelte";
 
 export let roomID;
 export let userID;
@@ -295,6 +297,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		<div bind:this={divIGV}></div>
 	</div>
 	<div id="users">
+		<!-- Show room name and shareable link -->
 		<h3>{roomName}</h3>
 		<div class="input-group input-group-sm">
 			<span class="input-group-text">Shareable Link:</span>
@@ -308,28 +311,26 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 			</button>
 		</div>
 
+		<!-- Show synced options -->
 		<h5 class="mt-5">IGV Options</h5>
 		{#if igvBrowser === null}
 			⌛
 		{:else}
-			<div class="input-group input-group-sm mt-2">
-				<span class="input-group-text">Center Guide:</span>
-				<div class="input-group-text bg-white">
-					<input type="checkbox" class="form-check-input" bind:checked={igvSettings.showCenterGuide}>
-				</div>
-			</div>
-			<div class="input-group input-group-sm mt-2">
-				<span class="input-group-text">Genome:</span>
-				<select class="form-select" bind:value={igvSettings.genome}>
-					<optgroup label="&#9888; Warning: changing genomes resets the view">
-						{#each Object.keys(GENOMES) as genomeID}
-							<option value="{genomeID}">{GENOMES[genomeID].name}</option>
-						{/each}
-					</optgroup>
-				</select>
-			</div>
+
+			<FormCheckbox
+				bind:checked={igvSettings.showCenterGuide}	
+				label="Center Guide" />
+
+			<FormDropdown
+				bind:selected={igvSettings.genome}
+				label="Ref. Genome"
+				labelOpt="&#9888; Warning: changing genomes resets the view"
+				values={Object.keys(GENOMES)}
+				fnDesc={genomeID => GENOMES[genomeID].name} />
+
 		{/if}
 
+		<!-- List of users -->
 		<h5 class="mt-5">Connected Users</h5>
 		{#each Object.keys(cursors) as id}
 			{#if cursors[id].timestamp == null || new Date().getTime() - cursors[id].timestamp < 1000000}

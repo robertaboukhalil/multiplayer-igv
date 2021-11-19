@@ -1,5 +1,5 @@
 <script>
-import { getColor } from "./utils";
+import { getColor } from "../utils";
 
 export let name = "anonymous";
 export let hidden = false;

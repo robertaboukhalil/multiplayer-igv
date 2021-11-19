@@ -2,7 +2,7 @@
 import { ulid } from "ulid";
 import { onMount } from "svelte";
 import localforage from "localforage";
-import IGV from "./IGV.svelte";
+import IGV from "./components/IGV.svelte";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 
