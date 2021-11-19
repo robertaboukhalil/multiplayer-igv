@@ -51,6 +51,10 @@ const IGV_SETTINGS = {
 	"showCenterGuide": {
 		get: () => igvBrowser.centerLineList[0].isVisible,
 		set: value => igvBrowser.setCenterLineVisibility(value)
+	},
+	"showCursorTrackingGuide": {
+		get: () => igvBrowser.cursorGuide.horizontalGuide.style.display !== "none",
+		set: value => igvBrowser.setCursorGuideVisibility(value)
 	}
 };
 
@@ -101,7 +105,6 @@ function igvBroadcastChanges() {
 	if(!syncReady)
 		return;
 
-	console.log("igvBroadcastChanges", igvSettings)
 	for(let setting in IGV_SETTINGS) {
 		const info = IGV_SETTINGS[setting];
 		// IGV events, i.e. `igvBrowser.on("...")`, need to send their own
@@ -207,7 +210,7 @@ async function handleMessage(data) {
 			const valueNew = data[setting];
 			const valuePrev = IGV_SETTINGS[setting].get();
 			if(valueNew != null && valueNew != valuePrev) {
-				console.log("handleMessage", setting, valuePrev, valueNew)
+				console.log("Handle message:", setting, valuePrev, valueNew)
 				igvSettings[setting] = valueNew;  // update igvSettings so that .set() call doesn't trigger an event again
 				await IGV_SETTINGS[setting].set(valueNew);
 				updated = true;
@@ -340,6 +343,10 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 			<FormCheckbox
 				bind:checked={igvSettings.showCenterGuide}	
 				label="Center Guide" />
+
+			<FormCheckbox
+				bind:checked={igvSettings.showCursorTrackingGuide}	
+				label="Cursor Guide" />
 
 			<FormDropdown
 				bind:selected={igvSettings.genome}
