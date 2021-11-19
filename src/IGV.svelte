@@ -23,6 +23,7 @@ let roomName = "";               // Room name
 let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
 let igvBrowser = null;           // IGV object
 let igvLocusPrev = null;         // Last locus (used to deduplicate messages)
+let igvShowCenterGuide = true;   // Whether to show center guide
 let igvGenome;                   // Reference genome currently used
 let igvGenomePrev;               // Last ref genome used (used to undo selection if user is not sure)
 
@@ -38,6 +39,10 @@ let cursors = {};                // Location of all cursors: { userID: { x: 100,
 // IGV Management
 // ===========================================================================
 
+// Reactive statement to update center guide visibility based on checkbox value
+$: if(igvBrowser !== null)
+	igvBrowser.setCenterLineVisibility(igvShowCenterGuide);
+
 // Setup IGV
 function igvInit(settings) {
 	// Don't initialize twice (this would be called twice if websocket disconnects)
@@ -51,7 +56,9 @@ function igvInit(settings) {
 		igvSettings[key] = value;
 		// Special cases
 		if(key === "genome")
-			igvGenome = igvGenomePrev = value || "hg19";
+			igvGenome = igvGenomePrev = value || IGV_DEFAULTS.genome;
+		if(key === "showCenterGuide")
+			igvShowCenterGuide = value;
 	}
 
 	// Create IGV instance
@@ -301,17 +308,27 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 			</button>
 		</div>
 
-		<h5 class="mt-4">IGV Options</h5>
-		<div class="input-group input-group-sm">
-			<span class="input-group-text">Genome:</span>
-			<select class="form-select" bind:value={igvGenome} on:change={igvGenomeChange}>
-				{#each Object.keys(GENOMES) as genomeID}
-					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
-				{/each}
-			</select>
-		</div>
+		<h5 class="mt-5">IGV Options</h5>
+		{#if igvBrowser === null}
+			⌛
+		{:else}
+			<div class="input-group input-group-sm">
+				<span class="input-group-text">Genome:</span>
+				<select class="form-select" bind:value={igvGenome} on:change={igvGenomeChange}>
+					{#each Object.keys(GENOMES) as genomeID}
+						<option value="{genomeID}">{GENOMES[genomeID].name}</option>
+					{/each}
+				</select>
+			</div>
+			<div class="input-group input-group-sm mt-2">
+				<span class="input-group-text">Center Guide:</span>
+				<div class="input-group-text bg-white">
+					<input type="checkbox" class="form-check-input" bind:checked={igvShowCenterGuide}>
+				</div>
+			</div>
+		{/if}
 
-		<h5 class="mt-4">Connected Users</h5>
+		<h5 class="mt-5">Connected Users</h5>
 		{#each Object.keys(cursors) as id}
 			{#if cursors[id].timestamp == null || new Date().getTime() - cursors[id].timestamp < 1000000}
 				<span style="color: {getColor(id)}">&#11044;</span> {id.split(":")[1]}

@@ -3,7 +3,7 @@
 
 import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
 import manifestJSON from "__STATIC_CONTENT_MANIFEST";
-const IGV_OPTIONS = ["locus", "genome"];
+const IGV_OPTIONS = ["locus", "genome", "showCenterGuide"];
 
 
 // =============================================================================

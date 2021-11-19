@@ -32,6 +32,7 @@ export function copyToClipboard(text, callback) {
 export const IGV_DEFAULTS = {
 	genome: "hg19",
 	locus: "8:128,750,948-128,751,025",
+	showCenterGuide: true,
 	tracks: [{
 		type: "alignment",
 		format: "cram",
