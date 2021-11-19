@@ -32,19 +32,21 @@ let cursors = {};                // Location of all cursors: { userID: { x: 100,
 let igvSettings = IGV_DEFAULTS;  // Settings object used to initialize IGV
 let igvBrowser = null;           // IGV object
 let igvReady = false;            // Whether igv has been fully initialized
+let syncReady = false;           // Ready to start syncing updates?
 
 // IGV settings that can change in the room
 const IGV_SETTINGS = {
 	"genome": {
 		get: () => igvBrowser.toJSON().reference.id,
-		set: value => {
+		set: async value => {
 			igvBrowser.removeAllTracks();
-			igvBrowser.loadGenome(value);
+			return await igvBrowser.loadGenome(value);
 		}
 	},
 	"locus": {
 		get: () => igvBrowser.currentLoci().join(" "),
-		set: value => igvBrowser.search(value)
+		set: async value => await igvBrowser.search(value),
+		event: true
 	},
 	"showCenterGuide": {
 		get: () => igvBrowser.centerLineList[0].isVisible,
@@ -76,11 +78,18 @@ function igvInit(settings) {
 		igvReady = true;
 		console.log("Created IGV browser", igvSettings);
 
+		// IGV sometimes auto adapts chromosome names, e.g. 8 --> chr8.
+		// This avoids an infinite loop caused by .get() != igvSettings.locus
+		igvSettings.locus = IGV_SETTINGS.locus.get();
+		syncReady = true;
+
 		// Listen to events
 		igvBrowser.on("locuschange", debounce(() => {
-			igvSettings.locus = IGV_SETTINGS.locus.get();
-			console.log("Set locus ==", igvSettings.locus);
-			broadcast({ locus: igvSettings.locus });
+			const locus = IGV_SETTINGS.locus.get();
+			if(locus != igvSettings.locus) {
+				igvSettings.locus = locus;  // no-op b/c we're setting igvSettings.locus = IGV_SETTINGS.locus.get()
+				broadcast({ locus });       // won't interpret self-message because igvSettings.locus is already updated
+			}
 		}, 50));
 		// TODO: igvBrowser.on("trackremoved", igvTrackRemove);
 		// TODO: igvBrowser.on("trackorderchanged", igvTrackOrderChanged);
@@ -89,14 +98,21 @@ function igvInit(settings) {
 
 // Broadcast changes to settings
 function igvBroadcastChanges() {
-	if(!igvReady)
+	if(!syncReady)
 		return;
 
+	console.log("igvBroadcastChanges", igvSettings)
 	for(let setting in IGV_SETTINGS) {
-		const value = igvSettings[setting];
-		if(value != null && value != IGV_SETTINGS[setting].get()) {
-			console.log(`Set ${setting} =`, value)
-			broadcast({ [setting]: value });
+		const info = IGV_SETTINGS[setting];
+		// IGV events, i.e. `igvBrowser.on("...")`, need to send their own
+		// broadcast() messages, so avoid duplicating them here
+		if(info.event === true)
+			continue;
+		const valueNew = igvSettings[setting];
+		const valuePrev = info.get();
+		if(valueNew != null && valueNew != valuePrev) {
+			console.log(`Broadcast ${setting} = |${valueNew}|; oldValue = |${valuePrev}|`);
+			broadcast({ [setting]: valueNew });
 		}
 	}
 }
@@ -164,7 +180,7 @@ function join() {
 			console.log("Ready");
 		// Otherwise, the message is to update a setting
 		} else {
-			handleMessage(data);
+			await handleMessage(data);
 		}
 	});
 
@@ -183,15 +199,19 @@ function join() {
 // Handle messages
 // ===========================================================================
 
-function handleMessage(data) {
+async function handleMessage(data) {
 	// Update IGV settings if they're non-null and have changed value
 	let updated = false;
-	for(let setting in IGV_SETTINGS) {
-		const value = data[setting];
-		if(value != null && value != IGV_SETTINGS[setting].get()) {
-			IGV_SETTINGS[setting].set(value);
-			igvSettings[setting] = value;
-			updated = true;
+	if(syncReady) {
+		for(let setting in IGV_SETTINGS) {
+			const valueNew = data[setting];
+			const valuePrev = IGV_SETTINGS[setting].get();
+			if(valueNew != null && valueNew != valuePrev) {
+				console.log("handleMessage", setting, valuePrev, valueNew)
+				igvSettings[setting] = valueNew;  // update igvSettings so that .set() call doesn't trigger an event again
+				await IGV_SETTINGS[setting].set(valueNew);
+				updated = true;
+			}
 		}
 	}
 
