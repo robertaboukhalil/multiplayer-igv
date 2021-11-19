@@ -19,14 +19,6 @@ let webSocket = null;
 // Room
 let roomName = "";               // Room name
 
-// IGV
-let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
-let igvBrowser = null;           // IGV object
-let igvLocusPrev = null;         // Last locus (used to deduplicate messages)
-let igvShowCenterGuide = true;   // Whether to show center guide
-let igvGenome;                   // Reference genome currently used
-let igvGenomePrev;               // Last ref genome used (used to undo selection if user is not sure)
-
 // UI
 let divIGV;                      // IGV element
 let divContainer;                // Container element
@@ -34,14 +26,39 @@ let svgCursor;                   // Current user's cursor element
 let isDoneCopy = false;          // Whether we're copying to clipboard
 let cursors = {};                // Location of all cursors: { userID: { x: 100, y: 100, timestamp: 123 } }
 
+// IGV
+let igvSettings = IGV_DEFAULTS;  // Settings object used to initialize IGV
+let igvBrowser = null;           // IGV object
+let igvLocusPrev = null;         // Last locus (used to deduplicate messages)
+let igvReady = false;            // Whether igv has been fully initialized
+
+// IGV settings that can change in the room
+const IGV_SETTINGS = {
+	"genome": {
+		get() {
+			return igvBrowser.toJSON().reference.id;
+		},
+		set(value) {
+			igvBrowser.removeAllTracks();
+			igvBrowser.loadGenome(value);
+		}
+	},
+	"showCenterGuide": {
+		get() {
+			return igvBrowser.centerLineList[0].isVisible;
+		},
+		set(value) {
+			igvBrowser.setCenterLineVisibility(value);
+		}
+	},
+};
+
 
 // ===========================================================================
 // IGV Management
 // ===========================================================================
 
-// Reactive statement to update center guide visibility based on checkbox value
-$: if(igvBrowser !== null)
-	igvBrowser.setCenterLineVisibility(igvShowCenterGuide);
+$: igvBroadcastChanges(igvSettings);
 
 // Setup IGV
 function igvInit(settings) {
@@ -51,19 +68,13 @@ function igvInit(settings) {
 
 	// Update default settings as needed
 	console.log("Got init settings:", settings)
-	for(let key in settings) {
-		const value = settings[key];
-		igvSettings[key] = value;
-		// Special cases
-		if(key === "genome")
-			igvGenome = igvGenomePrev = value || IGV_DEFAULTS.genome;
-		if(key === "showCenterGuide")
-			igvShowCenterGuide = value;
-	}
+	for(let key in settings)
+		igvSettings[key] = settings[key];
 
 	// Create IGV instance
 	igv.createBrowser(divIGV, igvSettings).then(browser => {
 		igvBrowser = browser;
+		igvReady = true;
 		console.log("Created IGV browser", igvSettings);
 
 		// Listen to events
@@ -71,6 +82,18 @@ function igvInit(settings) {
 		igvBrowser.on("trackremoved", igvTrackRemove);
 		igvBrowser.on("trackorderchanged", igvTrackOrderChanged);
 	});
+}
+
+// Broadcast changes to settings
+function igvBroadcastChanges() {
+	if(!igvReady)
+		return;
+
+	for(let setting in IGV_SETTINGS) {
+		const value = igvSettings[setting];
+		if(value != null && value != IGV_SETTINGS[setting].get())
+			broadcast({ [setting]: value });
+	}
 }
 
 // Broadcast a locus change (called by IGV)
@@ -83,17 +106,6 @@ function igvLocusChange() {
 	console.log("Set locus =", locus);
 	igvLocusPrev = locus;
 	broadcast({ locus: locus });
-}
-
-// Broadcast a ref genome change (called when dropdown changes)
-function igvGenomeChange() {
-	if(!confirm("Warning: Changing the genome removes all tracks. Are you sure?")) {
-		igvGenome = igvGenomePrev;
-		return;
-	}
-	igvGenomePrev = igvGenome;
-	console.log("Set ref genome =", igvGenome);
-	broadcast({ genome: igvGenome });
 }
 
 // TODO:
@@ -183,19 +195,22 @@ function join() {
 // ===========================================================================
 
 function handleMessage(data) {
+	// Update IGV settings if they're non-null and have changed value
+	for(let setting in IGV_SETTINGS) {
+		const value = data[setting];
+		if(value != null && value != IGV_SETTINGS[setting].get()) {
+			IGV_SETTINGS[setting].set(value);
+			igvSettings[setting] = value;
+		}
+	}
+
 	// Update cursor position
 	if(data.cursor != null) {
 		updateCursor(data);
-		
+
 	// Update locus only if it's different than where I am
 	} else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus) {
 		igvBrowser.search(data.locus);
-
-	// Update ref genome
-	} else if(data.genome != null) {
-		igvGenome = igvGenomePrev = data.genome;
-		igvBrowser.removeAllTracks();
-		igvBrowser.loadGenome(data.genome);
 
 	// Unknown message
 	} else {
@@ -314,7 +329,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		{:else}
 			<div class="input-group input-group-sm">
 				<span class="input-group-text">Genome:</span>
-				<select class="form-select" bind:value={igvGenome} on:change={igvGenomeChange}>
+				<select class="form-select" bind:value={igvSettings.genome}>
 					{#each Object.keys(GENOMES) as genomeID}
 						<option value="{genomeID}">{GENOMES[genomeID].name}</option>
 					{/each}
@@ -323,7 +338,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 			<div class="input-group input-group-sm mt-2">
 				<span class="input-group-text">Center Guide:</span>
 				<div class="input-group-text bg-white">
-					<input type="checkbox" class="form-check-input" bind:checked={igvShowCenterGuide}>
+					<input type="checkbox" class="form-check-input" bind:checked={igvSettings.showCenterGuide}>
 				</div>
 			</div>
 		{/if}
