@@ -52,8 +52,8 @@ export const IGV_DEFAULTS = {
 // Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
 // jq '.[] | { (.id): { name: .name}}' genomes.json | jq -s '.'
 export const GENOMES = {
-	"hg38": { "name": "Human (GRCh38/hg38)" },
 	"hg19": { "name": "Human (GRCh37/hg19)" },
+	"hg38": { "name": "Human (GRCh38/hg38)" },
 	"mm39": { "name": "Mouse (GRCm39/mm39)" },
 	"rn7": { "name": "Rat (rn7)" },
 	"panTro6": { "name": "Chimp (panTro6) (panTro6)" },

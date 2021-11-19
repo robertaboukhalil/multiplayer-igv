@@ -312,19 +312,21 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		{#if igvBrowser === null}
 			⌛
 		{:else}
-			<div class="input-group input-group-sm">
-				<span class="input-group-text">Genome:</span>
-				<select class="form-select" bind:value={igvSettings.genome}>
-					{#each Object.keys(GENOMES) as genomeID}
-						<option value="{genomeID}">{GENOMES[genomeID].name}</option>
-					{/each}
-				</select>
-			</div>
 			<div class="input-group input-group-sm mt-2">
 				<span class="input-group-text">Center Guide:</span>
 				<div class="input-group-text bg-white">
 					<input type="checkbox" class="form-check-input" bind:checked={igvSettings.showCenterGuide}>
 				</div>
+			</div>
+			<div class="input-group input-group-sm mt-2">
+				<span class="input-group-text">Genome:</span>
+				<select class="form-select" bind:value={igvSettings.genome}>
+					<optgroup label="&#9888; Warning: changing genomes resets the view">
+						{#each Object.keys(GENOMES) as genomeID}
+							<option value="{genomeID}">{GENOMES[genomeID].name}</option>
+						{/each}
+					</optgroup>
+				</select>
 			</div>
 		{/if}
 
