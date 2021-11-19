@@ -21,7 +21,7 @@ let roomName = "";               // Room name
 
 // IGV
 let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
-let igvBrowser = {};             // IGV object
+let igvBrowser = null;           // IGV object
 let igvLocusPrev = null;         // Last locus (used to deduplicate messages)
 let igvGenome;                   // Reference genome currently used
 
@@ -39,15 +39,18 @@ let cursors = {};                // Location of all cursors: { userID: { x: 100,
 
 // Setup IGV
 function igvInit(settings) {
+	// Don't initialize twice (this would be called twice if websocket disconnects)
+	if(igvBrowser !== null)
+		return;
+
 	// Update default settings as needed
+	console.log("Got init settings:", settings)
 	for(let key in settings) {
 		const value = settings[key];
-		if(key === "genome") {
+		igvSettings[key] = value;
+		// Special cases
+		if(key === "genome")
 			igvGenome = value || "hg19";
-			igvSettings.reference = GENOMES[igvGenome];
-		} else {
-			igvSettings[key] = value;
-		}
 	}
 
 	// Create IGV instance
@@ -72,6 +75,12 @@ function igvLocusChange() {
 	console.log("Set locus =", locus);
 	igvLocusPrev = locus;
 	broadcast({ locus: locus });
+}
+
+// Broadcast a ref genome change (called when dropdown changes)
+function igvGenomeChange() {
+	console.log("Set ref genome =", igvGenome);
+	broadcast({ genome: igvGenome });
 }
 
 // TODO:
@@ -125,7 +134,7 @@ function join() {
 			igvInit(data.igvinit);
 		// Process info about this room and remember it
 		} else if(data.init) {
-			roomName = data.init.roomName;
+			roomName = data.init.roomName || "Untitled";
 			const rooms = await localforage.getItem("rooms") || []
 			if(roomID && rooms.filter(room => room.id === roomID).length === 0)
 				await localforage.setItem("rooms", rooms.concat([{ id: roomID, name: roomName }]));
@@ -162,14 +171,23 @@ function join() {
 
 function handleMessage(data) {
 	// Update cursor position
-	if(data.cursor != null)
+	if(data.cursor != null) {
 		updateCursor(data);
+		
 	// Update locus only if it's different than where I am
-	else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus)
+	} else if(data.locus != null && igvBrowser.currentLoci().join(" ") != data.locus) {
 		igvBrowser.search(data.locus);
+
+	// Update ref genome
+	} else if(data.genome != null) {
+		igvGenome = data.genome;
+		igvBrowser.removeAllTracks();
+		igvBrowser.loadGenome(data.genome);
+
 	// Unknown message
-	else
+	} else {
 		console.warn("Ignoring message:", data)
+	}
 }
 
 // Update a cursor's position
@@ -277,6 +295,15 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 			</button>
 		</div>
 
+		<h5 class="mt-4">IGV Options</h5>
+		<select class="form-select" bind:value={igvGenome} on:change={igvGenomeChange}>
+			<optgroup label="Genome (changing this resets the view)">
+				{#each Object.keys(GENOMES) as genomeID}
+					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
+				{/each}
+			</optgroup>
+		</select>
+
 		<h5 class="mt-4">Connected Users</h5>
 		{#each Object.keys(cursors) as id}
 			{#if cursors[id].timestamp == null || new Date().getTime() - cursors[id].timestamp < 1000000}
@@ -293,11 +320,9 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 
 <style>
 #container {
-	height: 500px;
 	width: 700px;
-	border: 1px solid lightgray;
 	overflow-x: hidden;
-	overflow-y: hidden;
+	border: 1px solid lightgray;
 }
 
 #users {

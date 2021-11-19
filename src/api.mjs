@@ -3,7 +3,7 @@
 
 import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
 import manifestJSON from "__STATIC_CONTENT_MANIFEST";
-const IGV_OPTIONS = ["locus"];
+const IGV_OPTIONS = ["locus", "genome"];
 
 
 // =============================================================================
@@ -64,7 +64,7 @@ export class IGVRoom {
 				// We're creating a new room and initializing settings
 				case "/init": {
 					const data = await request.json();
-					await this.storage.put("name", data.roomName || "Untitled");
+					await this.storage.put("name", data.roomName);
 					await this.storage.put("time_created", new Date().getTime());
 					return new Response(this.id.toString(), {status: 200});
 				}
