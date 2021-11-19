@@ -28,28 +28,9 @@ export function copyToClipboard(text, callback) {
 // Configs
 // =============================================================================
 
-// Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
-export const GENOMES = {
-	"hg19": {
-		"name": "Human (GRCh37/hg19)",
-		"fastaURL": "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/hg19.fasta",
-		"cytobandURL": "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/cytoBand.txt",
-	},
-	"hg38": {
-		"name": "Human (GRCh38/hg38)",
-		"fastaURL": "https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg38/hg38.fa",
-		"cytobandURL": "https://s3.amazonaws.com/igv.org.genomes/hg38/annotations/cytoBandIdeo.txt.gz",
-	},
-	"mm39": {
-		"name": "Mouse (GRCm39/mm39)",
-		"fastaURL": "https://s3.amazonaws.com/igv.org.genomes/mm39/mm39.fa",
-		"cytobandURL": "https://hgdownload.soe.ucsc.edu/goldenPath/mm39/database/cytoBandIdeo.txt.gz",
-	}
-};
-
 // Default IGV options
 export const IGV_DEFAULTS = {
-	reference: GENOMES.hg19,
+	genome: "hg19",
 	locus: "8:128,750,948-128,751,025",
 	tracks: [{
 		type: "alignment",
@@ -63,7 +44,14 @@ export const IGV_DEFAULTS = {
 			position: 128750986,
 			option: "BASE",
 			direction: "ASC"
-		},
-		height: 600
+		}
 	}]
+};
+
+// TODO: add more
+// Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
+export const GENOMES = {
+	"hg19": { "name": "Human (GRCh37/hg19)" },
+	"hg38": { "name": "Human (GRCh38/hg38)" },
+	"mm39": { "name": "Mouse (GRCm39/mm39)" }
 };
