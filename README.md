@@ -15,9 +15,11 @@ Work in progress.
 
 #### Docs
 
-* https://github.com/cloudflare/workers-chat-demo
-* https://developers.cloudflare.com/workers/learning/using-durable-objects
+* https://github.com/igvteam/igv.js/wiki/Events
+* https://github.com/igvteam/igv.js/wiki/Browser-API-2.0
 * https://developers.cloudflare.com/workers/runtime-apis/durable-objects
+* https://developers.cloudflare.com/workers/learning/using-durable-objects
+* https://github.com/cloudflare/workers-chat-demo
 
 #### List objects
 
