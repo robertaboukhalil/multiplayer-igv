@@ -24,6 +24,7 @@ let igvSettings = IGV_DEFAULTS;  // Initial settings used to initialize IGV
 let igvBrowser = null;           // IGV object
 let igvLocusPrev = null;         // Last locus (used to deduplicate messages)
 let igvGenome;                   // Reference genome currently used
+let igvGenomePrev;               // Last ref genome used (used to undo selection if user is not sure)
 
 // UI
 let divIGV;                      // IGV element
@@ -50,7 +51,7 @@ function igvInit(settings) {
 		igvSettings[key] = value;
 		// Special cases
 		if(key === "genome")
-			igvGenome = value || "hg19";
+			igvGenome = igvGenomePrev = value || "hg19";
 	}
 
 	// Create IGV instance
@@ -79,6 +80,11 @@ function igvLocusChange() {
 
 // Broadcast a ref genome change (called when dropdown changes)
 function igvGenomeChange() {
+	if(!confirm("Warning: Changing the genome removes all tracks. Are you sure?")) {
+		igvGenome = igvGenomePrev;
+		return;
+	}
+	igvGenomePrev = igvGenome;
 	console.log("Set ref genome =", igvGenome);
 	broadcast({ genome: igvGenome });
 }
@@ -180,7 +186,7 @@ function handleMessage(data) {
 
 	// Update ref genome
 	} else if(data.genome != null) {
-		igvGenome = data.genome;
+		igvGenome = igvGenomePrev = data.genome;
 		igvBrowser.removeAllTracks();
 		igvBrowser.loadGenome(data.genome);
 
@@ -296,13 +302,14 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 		</div>
 
 		<h5 class="mt-4">IGV Options</h5>
-		<select class="form-select" bind:value={igvGenome} on:change={igvGenomeChange}>
-			<optgroup label="Genome (changing this resets the view)">
+		<div class="input-group input-group-sm">
+			<span class="input-group-text">Genome:</span>
+			<select class="form-select" bind:value={igvGenome} on:change={igvGenomeChange}>
 				{#each Object.keys(GENOMES) as genomeID}
 					<option value="{genomeID}">{GENOMES[genomeID].name}</option>
 				{/each}
-			</optgroup>
-		</select>
+			</select>
+		</div>
 
 		<h5 class="mt-4">Connected Users</h5>
 		{#each Object.keys(cursors) as id}
@@ -320,7 +327,7 @@ handlePointerLeave = debounce(handlePointerLeave, 10);
 
 <style>
 #container {
-	width: 700px;
+	width: 600px;
 	overflow-x: hidden;
 	border: 1px solid lightgray;
 }
