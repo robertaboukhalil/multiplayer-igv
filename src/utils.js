@@ -48,10 +48,18 @@ export const IGV_DEFAULTS = {
 	}]
 };
 
-// TODO: add more
 // Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
+// jq '.[] | { (.id): { name: .name}}' genomes.json | jq -s '.'
 export const GENOMES = {
-	"hg19": { "name": "Human (GRCh37/hg19)" },
 	"hg38": { "name": "Human (GRCh38/hg38)" },
-	"mm39": { "name": "Mouse (GRCm39/mm39)" }
+	"hg19": { "name": "Human (GRCh37/hg19)" },
+	"mm39": { "name": "Mouse (GRCm39/mm39)" },
+	"rn7": { "name": "Rat (rn7)" },
+	"panTro6": { "name": "Chimp (panTro6) (panTro6)" },
+	"bosTau9": { "name": "Cow (ARS-UCD1.2/bosTau9)" },
+	"susScr11": { "name": "Pig (SGSC Sscrofa11.1/susScr11)" },
+	"galGal6": { "name": " Chicken (galGal6)" },
+	"danRer11": { "name": "Zebrafish (GRCZ11/danRer11)" },
+	"dm6": { "name": "D. melanogaster (dm6)" },
+	"ASM985889v3": { "name": "Sars-CoV-2 (ASM985889v3)" }
 };
