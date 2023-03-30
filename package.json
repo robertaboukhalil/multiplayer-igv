@@ -20,5 +20,8 @@
 		"svelte": "^3.54.0",
 		"vite": "^4.2.0"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"sveltestrap": "^5.10.0"
+	}
 }
