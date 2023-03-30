@@ -1,27 +1,24 @@
 {
-  "name": "igv",
-  "description": "Multiplayer IGV",
-  "version": "1.0.0",
-  "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w"
-  },
-  "dependencies": {
-    "@cloudflare/kv-asset-handler": "^0.2.0",
-    "bootstrap": "^5.1.3",
-    "debounce": "^1.2.1",
-    "localforage": "^1.10.0",
-    "string-hash": "^1.1.3",
-    "ulid": "^2.3.0"
-  },
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^17.0.0",
-    "@rollup/plugin-node-resolve": "^11.1.0",
-    "rollup": "^2.36.1",
-    "rollup-plugin-copy": "^3.4.0",
-    "rollup-plugin-css-only": "^3.1.0",
-    "rollup-plugin-svelte": "^7.1.0",
-    "rollup-plugin-terser": "^7.0.2",
-    "svelte": "^3.44.1"
-  }
+	"name": "multiplayer-igv",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"lint": "prettier --plugin-search-dir . --check . && eslint .",
+		"format": "prettier --plugin-search-dir . --write ."
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-auto": "^2.0.0",
+		"@sveltejs/kit": "^1.5.0",
+		"eslint": "^8.28.0",
+		"eslint-config-prettier": "^8.5.0",
+		"eslint-plugin-svelte3": "^4.0.0",
+		"prettier": "^2.8.0",
+		"prettier-plugin-svelte": "^2.8.1",
+		"svelte": "^3.54.0",
+		"vite": "^4.2.0"
+	},
+	"type": "module"
 }
