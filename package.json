@@ -22,6 +22,8 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"nanoid": "^4.0.2",
+		"string-hash": "^1.1.3",
 		"sveltestrap": "^5.10.0"
 	}
 }
