@@ -38,7 +38,9 @@ onMount(async () => {
 	// Set up IGV
 	await new IGV().init({
 		div: thisIGV,
-		genome: "hg38"
+		genome: "hg38",
+		tracks: [],
+		onEvent: payload => multiplayer.broadcast("app", payload)
 	});
 });
 </script>
@@ -60,6 +62,7 @@ onMount(async () => {
 	on:pointermove={(e) => multiplayer.broadcastPointerMove(e)}
 	on:pointerleave={(e) => multiplayer.broadcastPointerLeave(e)}
 	on:click={(e) => multiplayer.broadcastClick(e)}
+	on:keypress={() => {}}
 >
 	<!-- Show click events -->
 	{#if clicked}

@@ -29,6 +29,7 @@ export class Multiplayer {
 			.on("presence", { event: "sync" }, this.onSupabasePresenceSync.bind(this))
 			.on("broadcast", { event: "cursor" }, this.onSupabaseBroadcastCursor.bind(this))
 			.on("broadcast", { event: "click" }, this.onSupabaseBroadcastClick.bind(this))
+			.on("broadcast", { event: "app" }, this.onSupabaseBroadcastAppEvent.bind(this))
 			.subscribe(this.onSupabaseSubscribe.bind(this));
 	}
 
@@ -75,38 +76,38 @@ export class Multiplayer {
 		}
 	}
 
+	onSupabaseBroadcastAppEvent({ payload }) {
+		console.log("PAYLOAD received", payload);
+	}
+
 	// =========================================================================
 	// Broadcast events
 	// =========================================================================
 
+	broadcast(event, payload) {
+		this.channel.send({
+			type: "broadcast",
+			event: event,
+			payload: { ...payload, id: this.me.id }
+		});
+	}
+
 	// Broadcast updated x/y mouse coordinates
 	broadcastPointerMove(event) {
 		const position = this.getCursorPositionSend(event.clientX, event.clientY);
-		this.channel.send({
-			type: "broadcast",
-			event: "cursor",
-			payload: { ...position, id: this.me.id }
-		});
+		this.broadcast("cursor", { ...position, id: this.me.id });
 	}
 
 	// Broadcast x/y coordinates to null
 	broadcastPointerLeave(event) {
 		if (event.clientX <= this.screen.clientWidth || event.clientY <= this.screen.clientHeight) return;
-		this.channel.send({
-			type: "broadcast",
-			event: "cursor",
-			payload: { x: null, y: null, id: this.me.id }
-		});
+		this.broadcast("cursor", { x: null, y: null, id: this.me.id });
 	}
 
 	// Broadcast mouse click
 	broadcastClick(event) {
 		const position = this.getCursorPositionSend(event.clientX, event.clientY);
-		this.channel.send({
-			type: "broadcast",
-			event: "click",
-			payload: { ...position, id: this.me.id }
-		});
+		this.broadcast("click", position);
 	}
 
 	// =========================================================================
@@ -179,25 +180,26 @@ const IGV_DEFAULTS = {
 export class IGV {
 	igv = null; // IGV library
 	browser = null; // IGV Browser object
-	// ready = false;   // Ready for it's state to be synced
 	room = {}; // Associated Room object
 	settings = IGV_DEFAULTS;
-	trackremoved = () => {};
+	onEvent = null;
+	// trackremoved = () => {};
+	// ready = false;   // Ready for it's state to be synced
 
 	// Create IGV browser
-	async init({ div, genome, room, tracks }) {
+	async init({ div, genome, tracks, onEvent }) {
 		// Don't reinitialize if we did already (happens if ?)
 		if (this.ready) {
 			console.log("IGV already initialized");
 			return;
 		}
 
-		// // Initialize genome and tracks
-		// this.room = room;
+		// Initialize
+		this.onEvent = onEvent ?? (payload => console.log("Payload =", payload));
 		this.settings.genome = genome;
-		// this.settings.tracks = tracks;
+		this.settings.tracks = tracks;
 
-		// Create IGV browser
+		// Create IGV browser (import here to avoid SSR issue)
 		this.igv = (await import("igv")).default;
 		this.igv.createBrowser(div, this.settings).then((browser) => {
 			this.browser = browser;
@@ -207,14 +209,11 @@ export class IGV {
 			// this.settings.locus = this.get("locus");
 			// this.ready = true;
 
-			// // Listen to locus change
-			// this.browser.on("locuschange", debounce(() => {
-			// 	const locus = this.get("locus");
-			// 	if(locus != this.settings.locus) {
-			// 		this.settings.locus = locus;
-			// 		this.room.broadcast({ locus });  // won't interpret self-message because settings.locus is already updated
-			// 	}
-			// }, 50));
+			// Listen to locus change
+			this.browser.on("locuschange", () => {
+				const locus = this.get("locus");
+				onEvent({ locus });
+			});
 
 			// // Listen to changes in center/cursor guides visibility
 			// this.browser.centerLineButton.button.addEventListener("click", () => {
@@ -233,7 +232,8 @@ export class IGV {
 
 	// Get an IGV setting
 	get(setting) {
-		if (setting === "locus") return this.browser.currentLoci().join(" ");
+		console.log("this.browser", this.browser.currentLoci());
+		if (setting === "locus") return Array.isArray(this.browser.currentLoci()) ? this.browser.currentLoci().join(" ") : this.browser.currentLoci();
 		else if (setting === "showCenterGuide") return this.browser.centerLineList[0].isVisible;
 		else if (setting === "showCursorTrackingGuide") return this.browser.cursorGuide.horizontalGuide.style.display !== "none";
 		else if (setting === "showTrackLabels") return this.browser.trackLabelsVisible;
