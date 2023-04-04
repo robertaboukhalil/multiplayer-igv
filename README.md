@@ -1,38 +1,34 @@
-# create-svelte
+# Multiplayer IGV
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+Work in progress.
 
-## Creating a project
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Development
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+### Pre-requisites
 
-# create a new project in my-app
-npm create svelte@latest my-app
+1. Supabase account with free tier (needed even for local dev unless you setup [their open source infra](https://github.com/supabase/realtime) yourself)
+2. Cloudflare account (not needed for local dev)
+
+### Supabase config
+
+Create a `.env` file in the root folder that contains your Supabase database's **public** URL and anonymous key:
+
+```
+PUBLIC_SUPABASE_URL = "https://YOUR_SUPABASE_PROJECT_ID.supabase.co"
+PUBLIC_SUPABASE_KEY_ANON = "YOUR_SUPABASE_ANON_KEY"
 ```
 
-## Developing
+You'll find that information in your Supabase dashboard under Settings --> API.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Make sure you use the **anonymous** key since it is exposed on the frontend, which is intended.
+
+### Cloudflare config (skip for local dev)
+
+    TODO
+
+### Launch web server (local dev)
 
 ```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
