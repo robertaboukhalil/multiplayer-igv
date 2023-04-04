@@ -27,9 +27,9 @@ onMount(async () => {
 		client: supabaseAnon,
 		channel: "test",
 		user: "Robert " + Math.round(Math.random() * 10),
-		onUpdateUsers: list => usersOnline = list,
-		onUpdateCursors: cursors => usersCursors = cursors,
-		onClick: c => clicked = c
+		onUpdateUsers: (list) => (usersOnline = list),
+		onUpdateCursors: (cursors) => (usersCursors = cursors),
+		onClick: (c) => (clicked = c)
 	});
 
 	// Set cursor to be the current user's pointer
@@ -54,11 +54,12 @@ onMount(async () => {
 </div>
 
 <!-- Contents of synced view -->
-<div class="screen"
+<div
+	class="screen"
 	bind:this={thisScreen}
-	on:pointermove={e => multiplayer.broadcastPointerMove(e)}
-	on:pointerleave={e => multiplayer.broadcastPointerLeave(e)}
-	on:click={e => multiplayer.broadcastClick(e)}
+	on:pointermove={(e) => multiplayer.broadcastPointerMove(e)}
+	on:pointerleave={(e) => multiplayer.broadcastPointerLeave(e)}
+	on:click={(e) => multiplayer.broadcastClick(e)}
 >
 	<!-- Show click events -->
 	{#if clicked}

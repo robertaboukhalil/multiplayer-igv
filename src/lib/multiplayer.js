@@ -121,7 +121,7 @@ export class Multiplayer {
 				y: Math.round(((y - this.screen.offsetTop) / this.screen.clientHeight) * 10000) / 100
 			};
 		}
-	
+
 		return {
 			x: Math.round(x - this.screen.offsetLeft),
 			y: Math.round(y - this.screen.offsetTop)
@@ -165,7 +165,6 @@ export class Multiplayer {
 	}
 }
 
-
 // =============================================================================
 // IGV class
 // =============================================================================
@@ -178,17 +177,17 @@ const IGV_DEFAULTS = {
 };
 
 export class IGV {
-	igv = null;      // IGV library
-	browser = null;  // IGV Browser object
+	igv = null; // IGV library
+	browser = null; // IGV Browser object
 	// ready = false;   // Ready for it's state to be synced
-	room = {};       // Associated Room object
+	room = {}; // Associated Room object
 	settings = IGV_DEFAULTS;
 	trackremoved = () => {};
 
 	// Create IGV browser
 	async init({ div, genome, room, tracks }) {
 		// Don't reinitialize if we did already (happens if ?)
-		if(this.ready) {
+		if (this.ready) {
 			console.log("IGV already initialized");
 			return;
 		}
@@ -200,7 +199,7 @@ export class IGV {
 
 		// Create IGV browser
 		this.igv = (await import("igv")).default;
-		this.igv.createBrowser(div, this.settings).then(browser => {
+		this.igv.createBrowser(div, this.settings).then((browser) => {
 			this.browser = browser;
 			console.log("Created IGV browser", browser);
 
@@ -234,34 +233,24 @@ export class IGV {
 
 	// Get an IGV setting
 	get(setting) {
-		if(setting === "locus")
-			return this.browser.currentLoci().join(" ");
-		else if(setting === "showCenterGuide")
-			return this.browser.centerLineList[0].isVisible;
-		else if(setting === "showCursorTrackingGuide")
-			return this.browser.cursorGuide.horizontalGuide.style.display !== "none";
-		else if(setting === "showTrackLabels")
-			return this.browser.trackLabelsVisible;
+		if (setting === "locus") return this.browser.currentLoci().join(" ");
+		else if (setting === "showCenterGuide") return this.browser.centerLineList[0].isVisible;
+		else if (setting === "showCursorTrackingGuide") return this.browser.cursorGuide.horizontalGuide.style.display !== "none";
+		else if (setting === "showTrackLabels") return this.browser.trackLabelsVisible;
 	}
 
 	// Set an IGV setting
 	async set(setting, value) {
-		console.log(`Set |${setting}| = |${value}|`)
+		console.log(`Set |${setting}| = |${value}|`);
 		// If already at the value of interest, don't do anything
-		if(this.get(setting) == value)
-			return;
+		if (this.get(setting) == value) return;
 
 		// Update locus
-		if(setting === "locus")
-			await this.browser.search(value);
-
+		if (setting === "locus") await this.browser.search(value);
 		// Cursor guides are boolean ==> click button if value doesn't match
-		else if(setting === "showCenterGuide")
-			this.browser.centerLineButton.button.click();
-		else if(setting === "showCursorTrackingGuide")
-			this.browser.cursorGuideButton.button.click();
-		else if(setting === "showTrackLabels")
-			this.browser.trackLabelControl.button.click();
+		else if (setting === "showCenterGuide") this.browser.centerLineButton.button.click();
+		else if (setting === "showCursorTrackingGuide") this.browser.cursorGuideButton.button.click();
+		else if (setting === "showTrackLabels") this.browser.trackLabelControl.button.click();
 	}
 
 	// Load tracks defined as JSON config
@@ -273,8 +262,8 @@ export class IGV {
 	// Delete tracks defined by their order
 	async deleteTracks(orders) {
 		console.log("Deleting tracks:", orders);
-		for(let order of orders) {
-			const track = this.browser.findTracks(t => t.order == order).find(d => d);
+		for (let order of orders) {
+			const track = this.browser.findTracks((t) => t.order == order).find((d) => d);
 			this.browser.removeTrack(track);
 		}
 	}
