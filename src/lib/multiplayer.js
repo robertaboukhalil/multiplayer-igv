@@ -16,6 +16,7 @@ export class Multiplayer {
 		this.onUpdateUsers = params.onUpdateUsers;
 		this.onUpdateCursors = params.onUpdateCursors;
 		this.onClick = params.onClick;
+		this.onPayload = params.onPayload;
 		this.usersOnline = {}; // Users that are still connected, e.g. {"uuid": {"name": "bla"}}
 		this.usersCursors = {}; // All cursor positions
 		this.me = {
@@ -77,7 +78,7 @@ export class Multiplayer {
 	}
 
 	onSupabaseBroadcastAppEvent({ payload }) {
-		console.log("PAYLOAD received", payload);
+		this.onPayload(payload);
 	}
 
 	// =========================================================================
@@ -183,8 +184,6 @@ export class IGV {
 	room = {}; // Associated Room object
 	settings = IGV_DEFAULTS;
 	onEvent = null;
-	// trackremoved = () => {};
-	// ready = false;   // Ready for it's state to be synced
 
 	// Create IGV browser
 	async init({ div, genome, tracks, onEvent }) {
@@ -205,14 +204,11 @@ export class IGV {
 			this.browser = browser;
 			console.log("Created IGV browser", browser);
 
-			// // IGV sometimes auto adapts chr names, e.g. 8 --> chr8. This avoids an infinite loop.
-			// this.settings.locus = this.get("locus");
-			// this.ready = true;
-
 			// Listen to locus change
 			this.browser.on("locuschange", () => {
 				const locus = this.get("locus");
-				onEvent({ locus });
+				console.log("Broadcasting locus change:", locus)
+				onEvent({ type: "locus", locus });
 			});
 
 			// // Listen to changes in center/cursor guides visibility
@@ -232,7 +228,6 @@ export class IGV {
 
 	// Get an IGV setting
 	get(setting) {
-		console.log("this.browser", this.browser.currentLoci());
 		if (setting === "locus") return Array.isArray(this.browser.currentLoci()) ? this.browser.currentLoci().join(" ") : this.browser.currentLoci();
 		else if (setting === "showCenterGuide") return this.browser.centerLineList[0].isVisible;
 		else if (setting === "showCursorTrackingGuide") return this.browser.cursorGuide.horizontalGuide.style.display !== "none";

@@ -16,12 +16,14 @@ let usersCursors = {};
 
 // User State
 let multiplayer = null;
+let igv = null;
 
 // On first load
 onMount(async () => {
 	if (!browser) return;
 
 	// Initialize
+	igv = await new IGV();
 	multiplayer = new Multiplayer({
 		screen: thisScreen,
 		client: supabaseAnon,
@@ -29,19 +31,30 @@ onMount(async () => {
 		user: "Robert " + Math.round(Math.random() * 10),
 		onUpdateUsers: (list) => (usersOnline = list),
 		onUpdateCursors: (cursors) => (usersCursors = cursors),
-		onClick: (c) => (clicked = c)
+		onClick: (c) => (clicked = c),
+		onPayload: payload => {
+			// Ignore messages to self
+			if(payload.id === multiplayer.me.id)
+				return;
+
+			// Interpret messages
+			if(payload.type === "locus") {
+				console.log("LOCUS", payload, multiplayer.me)
+				igv.set("locus", payload.locus)
+			}
+		}
 	});
 
-	// Set cursor to be the current user's pointer
-	thisScreen.style.cursor = `url('data:image/svg+xml;base64,${btoa(thisCursor.outerHTML)}'), pointer`;
-
-	// Set up IGV
-	await new IGV().init({
+	igv.init({
 		div: thisIGV,
 		genome: "hg38",
 		tracks: [],
 		onEvent: payload => multiplayer.broadcast("app", payload)
 	});
+
+
+	// Set cursor to be the current user's pointer
+	thisScreen.style.cursor = `url('data:image/svg+xml;base64,${btoa(thisCursor.outerHTML)}'), pointer`;
 });
 </script>
 
