@@ -226,6 +226,13 @@ export class IGV {
 		}
 	}
 
+	// Process an action
+	process(action, value) {
+		if (action === "track-add") {
+			this.browser.loadTrack(value);
+		}
+	}
+
 	// Broadcast setting change
 	broadcastSetting(setting) {
 		// Make sure to only broadcast the new setting if you're the one who made the change
@@ -239,6 +246,15 @@ export class IGV {
 			type: "setting",
 			setting: setting,
 			value: this.get(setting)
+		});
+	}
+
+	// Broadcast action
+	broadcastAction(action, value) {
+		this.multiplayer.broadcast("app", {
+			type: "action",
+			action,
+			value
 		});
 	}
 

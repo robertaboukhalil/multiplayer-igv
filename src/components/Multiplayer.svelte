@@ -39,12 +39,18 @@ onMount(async () => {
 			if (payload.id === multiplayer.me.id) return;
 
 			// Update IGV settings
-			if (payload.type === "setting") igv.set(payload.setting, payload.value);
+			if (payload.type === "setting") {
+				igv.set(payload.setting, payload.value);
+			}
 
+			// Process actions
+			else if (payload.type === "action") {
+				igv.process(payload.action, payload.value);
+			}
 		}
 	});
 
-	igv = new IGV({ multiplayer, div: thisIGV, genome: "hg38", tracks: []});
+	igv = new IGV({ multiplayer, div: thisIGV, genome: "hg38", tracks: [] });
 	await igv.init();
 
 	// Set cursor to be the current user's pointer
@@ -67,11 +73,8 @@ onMount(async () => {
 					isLog: true,
 					name: "GBM Copy # (TCGA Broad GDAC)"
 				};
-				igv.browser.loadTrack(track);
-				multiplayer.broadcast("app", {
-					type: "track_add",
-					track
-				});
+				igv.process("track-add", track);
+				igv.broadcastAction("track-add", track);
 				console.log("broadcast new track!");
 			}}>Add track</Button
 		>
