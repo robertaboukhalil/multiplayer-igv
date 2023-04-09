@@ -162,17 +162,19 @@ export class IGV {
 	onEvent = null;
 	skipBroadcast = {};
 
-	// Create IGV browser
-	async init({ multiplayer, div, genome, tracks, onEvent }) {
-		// Initialize
+	constructor({ multiplayer, div, genome, tracks, onEvent }) {
 		this.multiplayer = multiplayer;
-		this.onEvent = onEvent ?? ((payload) => console.log("Payload =", payload));
+		this.div = div;
 		this.settings.genome = genome;
 		this.settings.tracks = tracks;
+		this.onEvent = onEvent ?? ((payload) => console.log("Payload =", payload));
+	}
 
+	// Create IGV browser
+	async init() {
 		// Create IGV browser (import here to avoid SSR issue)
 		this.igv = (await import("igv")).default;
-		this.igv.createBrowser(div, this.settings).then((browser) => {
+		this.igv.createBrowser(this.div, this.settings).then((browser) => {
 			this.browser = browser;
 			console.log("Created IGV browser", browser);
 

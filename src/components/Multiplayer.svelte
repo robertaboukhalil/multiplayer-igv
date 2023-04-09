@@ -25,7 +25,6 @@ onMount(async () => {
 	if (!browser) return;
 
 	// Initialize
-	igv = await new IGV();
 	multiplayer = new Multiplayer({
 		screen: thisScreen,
 		client: supabaseAnon,
@@ -45,12 +44,8 @@ onMount(async () => {
 		}
 	});
 
-	igv.init({
-		multiplayer,
-		div: thisIGV,
-		genome: "hg38",
-		tracks: []
-	});
+	igv = new IGV({ multiplayer, div: thisIGV, genome: "hg38", tracks: []});
+	await igv.init();
 
 	// Set cursor to be the current user's pointer
 	thisScreen.style.cursor = `url('data:image/svg+xml;base64,${btoa(thisCursor.outerHTML)}'), pointer`;
