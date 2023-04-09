@@ -183,15 +183,10 @@ export class IGV {
 	browser = null; // IGV Browser object
 	settings = IGV_DEFAULTS;
 	onEvent = null;
+	skipBroadcast = {};
 
 	// Create IGV browser
 	async init({ div, genome, tracks, onEvent }) {
-		// Don't reinitialize if we did already (happens if ?)
-		if (this.ready) {
-			console.log("IGV already initialized");
-			return;
-		}
-
 		// Initialize
 		this.onEvent = onEvent ?? ((payload) => console.log("Payload =", payload));
 		this.settings.genome = genome;
@@ -203,15 +198,8 @@ export class IGV {
 			this.browser = browser;
 			console.log("Created IGV browser", browser);
 
-			// Listen to locus change
-			this.browser.on("locuschange", () => {
-				onEvent({
-					type: "locus",
-					locus: this.get("locus")
-				});
-			});
-
-			// Listen to changes in center/cursor guides visibility
+			// Listen to IGV view changes
+			this.browser.on("locuschange", () => this.broadcast("locus"));
 			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcast("showCenterGuide"));
 			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcast("showCursorTrackingGuide"));
 			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcast("showTrackLabels"));
@@ -221,19 +209,24 @@ export class IGV {
 		});
 	}
 
-	// Get an IGV setting
+	// Get an IGV setting. Don't use `this.get("locus")` because that might give fractional coordinates,
+	// e.g. "chr17:7668882.847133762-7690031.847133762", which is broadcast to other users and causes them
+	// to re-broadcast a corrected locus, which can cause infinite loops.
 	get(setting) {
-		if (setting === "locus") return IGV.getLocus(this.browser.currentLoci());
+		if (setting === "locus") return IGV.getLocus(this.browser.referenceFrameList.map((locus) => locus.getLocusString()));
 		else if (setting === "showCenterGuide") return this.browser.centerLineList[0].isVisible;
 		else if (setting === "showCursorTrackingGuide") return this.browser.cursorGuide.horizontalGuide.style.display !== "none";
 		else if (setting === "showTrackLabels") return this.browser.trackLabelsVisible;
 	}
 
-	// Set an IGV setting
+	// Set an IGV setting (only called when receive broadcasted message)
 	async set(setting, value) {
 		console.log(`Set |${setting}| = |${value}|`, this.get(setting) == value ? "NO-OP" : "");
 		// If already at the value of interest, don't do anything
 		if (this.get(setting) == value) return;
+
+		// We're updating a setting because of a broadcasted message => don't send one ourselves
+		this.skipBroadcast[setting] = true;
 
 		// Update locus
 		if (setting === "locus") await this.browser.search(value);
@@ -245,7 +238,12 @@ export class IGV {
 
 	// Broadcast IGV setting change
 	broadcast(setting) {
-		// TODO: Make sure to only broadcast the new locus if you're the one who made the change
+		// Make sure to only broadcast the new setting if you're the one who made the change
+		if(this.skipBroadcast[setting]) {
+			console.log("Don't broadcast", setting)
+			this.skipBroadcast[setting] = false;
+			return;
+		}
 
 		this.onEvent({
 			type: setting,

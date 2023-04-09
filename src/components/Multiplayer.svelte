@@ -35,7 +35,7 @@ onMount(async () => {
 		onPayload: (payload) => {
 			// Ignore messages to self
 			if (payload.id === multiplayer.me.id) {
-				console.log("Ignoring message to self", payload, multiplayer.me.id)
+				console.log("Ignoring message to self", payload, multiplayer.me.id);
 				return;
 			}
 
