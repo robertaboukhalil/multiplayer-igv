@@ -23,6 +23,7 @@
 	"type": "module",
 	"dependencies": {
 		"@supabase/supabase-js": "^2.14.0",
+		"debounce": "^1.2.1",
 		"igv": "^2.15.3",
 		"nanoid": "^4.0.2",
 		"string-hash": "^1.1.3",

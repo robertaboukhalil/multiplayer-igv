@@ -1,6 +1,7 @@
 <script>
 import { onMount } from "svelte";
 import { browser } from "$app/environment";
+import { debounce } from "debounce";
 import Cursor from "$components/Cursor.svelte";
 import Profile from "$components/Profile.svelte";
 import { supabaseAnon } from "$lib/db.public";
@@ -74,7 +75,7 @@ onMount(async () => {
 <div
 	class="screen"
 	bind:this={thisScreen}
-	on:pointermove={(e) => multiplayer.broadcastPointerMove(e)}
+	on:pointermove={debounce((e) => multiplayer.broadcastPointerMove(e), 50)}
 	on:pointerleave={(e) => multiplayer.broadcastPointerLeave(e)}
 	on:click={(e) => multiplayer.broadcastClick(e)}
 	on:keypress={() => {}}
