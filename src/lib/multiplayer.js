@@ -204,8 +204,7 @@ export class IGV {
 			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcast("showCursorTrackingGuide"));
 			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcast("showTrackLabels"));
 
-			// // Listen to removed tracks
-			// this.browser.on("trackremoved", this.trackremoved);
+			// TODO: Supported events: trackremoved, trackorderchanged, trackclick, trackdrag, trackdragend
 		});
 	}
 
@@ -239,8 +238,8 @@ export class IGV {
 	// Broadcast IGV setting change
 	broadcast(setting) {
 		// Make sure to only broadcast the new setting if you're the one who made the change
-		if(this.skipBroadcast[setting]) {
-			console.log("Don't broadcast", setting)
+		if (this.skipBroadcast[setting]) {
+			console.log("Don't broadcast", setting);
 			this.skipBroadcast[setting] = false;
 			return;
 		}

@@ -1,7 +1,8 @@
 <script>
 import { onMount } from "svelte";
-import { browser } from "$app/environment";
+import { Button } from "sveltestrap";
 import { debounce } from "debounce";
+import { browser } from "$app/environment";
 import Cursor from "$components/Cursor.svelte";
 import Profile from "$components/Profile.svelte";
 import { supabaseAnon } from "$lib/db.public";
@@ -29,7 +30,7 @@ onMount(async () => {
 		screen: thisScreen,
 		client: supabaseAnon,
 		channel: "test",
-		user: "User " + Math.round(Math.random() * 10),
+		user: "User " + Math.round(Math.random() * 100),
 		onUpdateUsers: (list) => (usersOnline = list),
 		onUpdateCursors: (cursors) => (usersCursors = cursors),
 		onClick: (c) => (clicked = c),
@@ -63,12 +64,35 @@ onMount(async () => {
 
 <h4>Multiplayer IGV</h4>
 
-<!-- Who's online? -->
-<div class=" text-end p-0 m-0">
-	{#each Object.keys(usersOnline).sort() as id}
-		{@const name = usersOnline[id]?.name || "Anonymous"}
-		<Profile {name} isSelf={id === multiplayer.me.id} />
-	{/each}
+<!-- Header bar -->
+<div class="d-flex">
+	<div class="me-auto">
+		<Button
+			color="primary"
+			size="md"
+			on:click={() => {
+				const track = {
+					url: "https://s3.amazonaws.com/igv.org.demo/GBM-TP.seg.gz",
+					indexed: false,
+					isLog: true,
+					name: "GBM Copy # (TCGA Broad GDAC)"
+				};
+				igv.browser.loadTrack(track);
+				multiplayer.broadcast("app", {
+					type: "track_add",
+					track
+				});
+				console.log("broadcast new track!");
+			}}>Add track</Button
+		>
+	</div>
+	<!-- Who's online? -->
+	<div class="text-end p-0 m-0">
+		{#each Object.keys(usersOnline).sort() as id}
+			{@const name = usersOnline[id]?.name || "Anonymous"}
+			<Profile {name} isSelf={id === multiplayer.me.id} />
+		{/each}
+	</div>
 </div>
 
 <!-- Contents of synced view -->
