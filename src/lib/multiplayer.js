@@ -5,7 +5,6 @@ import { nanoid } from "nanoid";
 // Multiplayer class
 // =============================================================================
 
-const CURSOR_USE_PERCENT = false;
 const SUPABASE_REALTIME_STATUS_SUBSCRIBED = "SUBSCRIBED";
 
 export class Multiplayer {
@@ -115,33 +114,19 @@ export class Multiplayer {
 	// Internal utilities
 	// =========================================================================
 
-	// Calculate user's cursor position before sending to channel
+	// Normalize user's cursor position to current screen size before sending to channel
 	getCursorPositionSend(x, y) {
-		if (CURSOR_USE_PERCENT) {
-			return {
-				x: Math.round(((x - this.screen.offsetLeft) / this.screen.clientWidth) * 10000) / 100,
-				y: Math.round(((y - this.screen.offsetTop) / this.screen.clientHeight) * 10000) / 100
-			};
-		}
-
 		return {
-			x: Math.round(x - this.screen.offsetLeft),
-			y: Math.round(y - this.screen.offsetTop)
+			x: ((x - this.screen.offsetLeft) / this.screen.clientWidth).toFixed(5),
+			y: ((y - this.screen.offsetTop) / this.screen.clientHeight).toFixed(5)
 		};
 	}
 
-	// Calculate another user's cursor position that we received
+	// Scale received cursor position to our screen size
 	getCursorPositionReceive(x, y) {
-		if (CURSOR_USE_PERCENT) {
-			return {
-				x: (x / 100) * this.screen.clientWidth + this.screen.offsetLeft,
-				y: (y / 100) * this.screen.clientHeight + this.screen.offsetTop
-			};
-		}
-
 		return {
-			x: Math.round(x + this.screen.offsetLeft),
-			y: Math.round(y + this.screen.offsetTop)
+			x: x * this.screen.clientWidth + this.screen.offsetLeft,
+			y: y * this.screen.clientHeight + this.screen.offsetTop
 		};
 	}
 
