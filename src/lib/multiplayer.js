@@ -194,7 +194,7 @@ export class IGV {
 		}
 
 		// Initialize
-		this.onEvent = onEvent ?? (payload => console.log("Payload =", payload));
+		this.onEvent = onEvent ?? ((payload) => console.log("Payload =", payload));
 		this.settings.genome = genome;
 		this.settings.tracks = tracks;
 
@@ -206,21 +206,31 @@ export class IGV {
 
 			// Listen to locus change
 			this.browser.on("locuschange", () => {
-				const locus = this.get("locus");
-				console.log("Broadcasting locus change:", locus)
-				onEvent({ type: "locus", locus });
+				onEvent({
+					type: "locus",
+					locus: this.get("locus")
+				});
 			});
 
-			// // Listen to changes in center/cursor guides visibility
-			// this.browser.centerLineButton.button.addEventListener("click", () => {
-			// 	this.room.broadcast({ showCenterGuide: this.get("showCenterGuide") });
-			// });
-			// this.browser.cursorGuideButton.button.addEventListener("click", () => {
-			// 	this.room.broadcast({ showCursorTrackingGuide: this.get("showCursorTrackingGuide") });
-			// });
-			// this.browser.trackLabelControl.button.addEventListener("click", () => {
-			// 	this.room.broadcast({ showTrackLabels: this.get("showTrackLabels") });
-			// });
+			// Listen to changes in center/cursor guides visibility
+			this.browser.centerLineButton.button.addEventListener("click", () => {
+				onEvent({
+					type: "showCenterGuide",
+					showCenterGuide: this.get("showCenterGuide")
+				});
+			});
+			this.browser.cursorGuideButton.button.addEventListener("click", () => {
+				onEvent({
+					type: "showCursorTrackingGuide",
+					showCursorTrackingGuide: this.get("showCursorTrackingGuide")
+				});
+			});
+			this.browser.trackLabelControl.button.addEventListener("click", () => {
+				onEvent({
+					type: "showTrackLabels",
+					showTrackLabels: this.get("showTrackLabels")
+				});
+			});
 			// // Listen to removed tracks
 			// this.browser.on("trackremoved", this.trackremoved);
 		});

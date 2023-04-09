@@ -32,16 +32,16 @@ onMount(async () => {
 		onUpdateUsers: (list) => (usersOnline = list),
 		onUpdateCursors: (cursors) => (usersCursors = cursors),
 		onClick: (c) => (clicked = c),
-		onPayload: payload => {
+		onPayload: (payload) => {
 			// Ignore messages to self
-			if(payload.id === multiplayer.me.id)
+			if (payload.id === multiplayer.me.id) {
+				console.log("Ignoring message to self", payload, multiplayer.me.id)
 				return;
+			}
 
 			// Interpret messages
-			if(payload.type === "locus") {
-				console.log("LOCUS", payload, multiplayer.me)
-				igv.set("locus", payload.locus)
-			}
+			console.log("Received", payload, multiplayer.me.id);
+			igv.set(payload.type, payload[payload.type]);
 		}
 	});
 
@@ -49,9 +49,11 @@ onMount(async () => {
 		div: thisIGV,
 		genome: "hg38",
 		tracks: [],
-		onEvent: payload => multiplayer.broadcast("app", payload)
+		onEvent: (payload) => {
+			console.log("Broadcasting:", payload, "from", multiplayer.me.id);
+			multiplayer.broadcast("app", payload);
+		}
 	});
-
 
 	// Set cursor to be the current user's pointer
 	thisScreen.style.cursor = `url('data:image/svg+xml;base64,${btoa(thisCursor.outerHTML)}'), pointer`;
