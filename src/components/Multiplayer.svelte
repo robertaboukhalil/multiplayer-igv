@@ -28,7 +28,7 @@ onMount(async () => {
 		screen: thisScreen,
 		client: supabaseAnon,
 		channel: "test",
-		user: "Robert " + Math.round(Math.random() * 10),
+		user: "User " + Math.round(Math.random() * 10),
 		onUpdateUsers: (list) => (usersOnline = list),
 		onUpdateCursors: (cursors) => (usersCursors = cursors),
 		onClick: (c) => (clicked = c),

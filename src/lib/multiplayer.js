@@ -181,7 +181,6 @@ const IGV_DEFAULTS = {
 export class IGV {
 	igv = null; // IGV library
 	browser = null; // IGV Browser object
-	room = {}; // Associated Room object
 	settings = IGV_DEFAULTS;
 	onEvent = null;
 
@@ -213,24 +212,10 @@ export class IGV {
 			});
 
 			// Listen to changes in center/cursor guides visibility
-			this.browser.centerLineButton.button.addEventListener("click", () => {
-				onEvent({
-					type: "showCenterGuide",
-					showCenterGuide: this.get("showCenterGuide")
-				});
-			});
-			this.browser.cursorGuideButton.button.addEventListener("click", () => {
-				onEvent({
-					type: "showCursorTrackingGuide",
-					showCursorTrackingGuide: this.get("showCursorTrackingGuide")
-				});
-			});
-			this.browser.trackLabelControl.button.addEventListener("click", () => {
-				onEvent({
-					type: "showTrackLabels",
-					showTrackLabels: this.get("showTrackLabels")
-				});
-			});
+			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcast("showCenterGuide"));
+			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcast("showCursorTrackingGuide"));
+			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcast("showTrackLabels"));
+
 			// // Listen to removed tracks
 			// this.browser.on("trackremoved", this.trackremoved);
 		});
@@ -238,7 +223,7 @@ export class IGV {
 
 	// Get an IGV setting
 	get(setting) {
-		if (setting === "locus") return Array.isArray(this.browser.currentLoci()) ? this.browser.currentLoci().join(" ") : this.browser.currentLoci();
+		if (setting === "locus") return IGV.getLocus(this.browser.currentLoci());
 		else if (setting === "showCenterGuide") return this.browser.centerLineList[0].isVisible;
 		else if (setting === "showCursorTrackingGuide") return this.browser.cursorGuide.horizontalGuide.style.display !== "none";
 		else if (setting === "showTrackLabels") return this.browser.trackLabelsVisible;
@@ -246,7 +231,7 @@ export class IGV {
 
 	// Set an IGV setting
 	async set(setting, value) {
-		console.log(`Set |${setting}| = |${value}|`);
+		console.log(`Set |${setting}| = |${value}|`, this.get(setting) == value ? "NO-OP" : "");
 		// If already at the value of interest, don't do anything
 		if (this.get(setting) == value) return;
 
@@ -258,18 +243,37 @@ export class IGV {
 		else if (setting === "showTrackLabels") this.browser.trackLabelControl.button.click();
 	}
 
-	// Load tracks defined as JSON config
-	async loadTracks(tracks) {
-		console.log("Adding tracks:", tracks);
-		return await this.browser.loadTrackList(tracks);
+	// Broadcast IGV setting change
+	broadcast(setting) {
+		// TODO: Make sure to only broadcast the new locus if you're the one who made the change
+
+		this.onEvent({
+			type: setting,
+			[setting]: this.get(setting)
+		});
 	}
 
-	// Delete tracks defined by their order
-	async deleteTracks(orders) {
-		console.log("Deleting tracks:", orders);
-		for (let order of orders) {
-			const track = this.browser.findTracks((t) => t.order == order).find((d) => d);
-			this.browser.removeTrack(track);
-		}
+	// // Load tracks defined as JSON config
+	// async loadTracks(tracks) {
+	// 	console.log("Adding tracks:", tracks);
+	// 	return await this.browser.loadTrackList(tracks);
+	// }
+
+	// // Delete tracks defined by their order
+	// async deleteTracks(orders) {
+	// 	console.log("Deleting tracks:", orders);
+	// 	for (let order of orders) {
+	// 		const track = this.browser.findTracks((t) => t.order == order).find((d) => d);
+	// 		this.browser.removeTrack(track);
+	// 	}
+	// }
+
+	// =========================================================================
+	// Static class utilities
+	// =========================================================================
+
+	static getLocus(locus) {
+		const locusStr = Array.isArray(locus) ? locus.join(" ") : locus;
+		return locusStr.replace(/,/g, "");
 	}
 }
