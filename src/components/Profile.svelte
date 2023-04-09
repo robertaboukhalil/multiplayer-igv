@@ -7,8 +7,18 @@ export let isSelf = false;
 
 // State
 let thisCircle;
-$: initials = Multiplayer.getInitials(name);
+$: initials = getInitials(name);
 $: color = Multiplayer.getHashColor(name);
+
+function getInitials(str = "") {
+	const initials = str
+		.toUpperCase()
+		.split(" ")
+		.map((str) => str[0]);
+
+	if (initials.length === 1) return initials[0];
+	return `${initials[0]}${initials[initials.length - 1]}`;
+}
 </script>
 
 <div class="circle" style="background-color: {color}" class:border-me={isSelf}>

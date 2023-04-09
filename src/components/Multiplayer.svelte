@@ -36,25 +36,20 @@ onMount(async () => {
 		onClick: (c) => (clicked = c),
 		onPayload: (payload) => {
 			// Ignore messages to self
-			if (payload.id === multiplayer.me.id) {
-				console.log("Ignoring message to self", payload, multiplayer.me.id);
-				return;
-			}
+			console.log("Received", payload, multiplayer.me.id, payload.id === multiplayer.me.id ? "NO-OP" : "");
+			if (payload.id === multiplayer.me.id) return;
 
-			// Interpret messages
-			console.log("Received", payload, multiplayer.me.id);
-			igv.set(payload.type, payload[payload.type]);
+			// Update IGV settings
+			if (payload.type === "setting") igv.set(payload.setting, payload.value);
+
 		}
 	});
 
 	igv.init({
+		multiplayer,
 		div: thisIGV,
 		genome: "hg38",
-		tracks: [],
-		onEvent: (payload) => {
-			console.log("Broadcasting:", payload, "from", multiplayer.me.id);
-			multiplayer.broadcast("app", payload);
-		}
+		tracks: []
 	});
 
 	// Set cursor to be the current user's pointer
