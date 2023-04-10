@@ -102,8 +102,9 @@ onMount(async () => {
 		{@const position = multiplayer.getCursorPositionReceive(clicked.x, clicked.y)}
 		<div
 			class="spinner-grow"
-			style="background-color: {Multiplayer.getHashColor(usersOnline[clicked?.id]?.name || 'Anonymous')}; position:absolute; top: {position.y -
-				15}px; left: {position.x - 15}px"
+			style="z-index:9999; background-color: {Multiplayer.getHashColor(
+				usersOnline[clicked?.id]?.name || 'Anonymous'
+			)}; position:absolute; top: {position.y - 15}px; left: {position.x - 15}px"
 		/>
 	{/if}
 
