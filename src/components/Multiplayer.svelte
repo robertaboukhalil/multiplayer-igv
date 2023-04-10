@@ -9,6 +9,7 @@ import { supabaseAnon } from "$lib/db.public";
 import { Multiplayer, IGV } from "$lib/multiplayer";
 
 export let channel;
+export let config;
 
 // Screen state
 let clicked; // If true, shows click animation at position clicked.x/y
@@ -52,7 +53,11 @@ onMount(async () => {
 		}
 	});
 
-	igv = new IGV({ multiplayer, div: thisIGV, genome: "hg38", tracks: [] });
+	igv = new IGV({
+		multiplayer,
+		config,
+		div: thisIGV
+	});
 	await igv.init();
 
 	// Set cursor to be the current user's pointer
@@ -79,6 +84,18 @@ onMount(async () => {
 				igv.broadcastAction("track-add", track);
 				console.log("broadcast new track!");
 			}}>Add track</Button
+		>
+
+		<Button
+			on:click={async () => {
+				await fetch(`/api/v0/rooms/${channel}`, {
+					method: "POST",
+					body: JSON.stringify({
+						config: igv.browser.toJSON()
+					})
+				});
+				// await supabaseAnon.from("rooms_stg").update({ config: igv.browser.toJSON() }).eq("uuid", channel);
+			}}>Save</Button
 		>
 	</div>
 	<!-- Who's online? -->

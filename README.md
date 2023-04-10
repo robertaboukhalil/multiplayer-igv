@@ -16,11 +16,12 @@ Create a `.env` file in the root folder that contains your Supabase database's *
 ```
 PUBLIC_SUPABASE_URL = "https://YOUR_SUPABASE_PROJECT_ID.supabase.co"
 PUBLIC_SUPABASE_KEY_ANON = "YOUR_SUPABASE_ANON_KEY"
+SUPABASE_KEY_ADMIN = "YOUR_SUPABASE_ADMIN_KEY"
 ```
 
 You'll find that information in your Supabase dashboard under Settings --> API.
 
-Make sure you use the **anonymous** key since it is exposed on the frontend, which is intended.
+Make sure you use the **anonymous** key for `PUBLIC_SUPABASE_KEY_ANON` since it is exposed on the frontend, which is intended.
 
 ### Cloudflare config (skip for local dev)
 

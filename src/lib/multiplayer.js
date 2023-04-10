@@ -159,15 +159,12 @@ export class IGV {
 	igv = null; // IGV library
 	browser = null; // IGV Browser object
 	settings = IGV_DEFAULTS;
-	onEvent = null;
 	skipBroadcast = {};
 
-	constructor({ multiplayer, div, genome, tracks, onEvent }) {
+	constructor({ multiplayer, div, config }) {
 		this.multiplayer = multiplayer;
 		this.div = div;
-		this.settings.genome = genome;
-		this.settings.tracks = tracks;
-		this.onEvent = onEvent ?? ((payload) => console.log("Payload =", payload));
+		this.settings = config || IGV_DEFAULTS;
 	}
 
 	// Create IGV browser
