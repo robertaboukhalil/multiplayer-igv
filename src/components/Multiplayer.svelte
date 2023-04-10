@@ -8,6 +8,8 @@ import Profile from "$components/Profile.svelte";
 import { supabaseAnon } from "$lib/db.public";
 import { Multiplayer, IGV } from "$lib/multiplayer";
 
+export let channel;
+
 // Screen state
 let clicked; // If true, shows click animation at position clicked.x/y
 let thisCursor;
@@ -26,9 +28,9 @@ onMount(async () => {
 
 	// Initialize
 	multiplayer = new Multiplayer({
+		channel,
 		screen: thisScreen,
 		client: supabaseAnon,
-		channel: "test",
 		user: "User " + Math.round(Math.random() * 100),
 		onUpdateUsers: (list) => (usersOnline = list),
 		onUpdateCursors: (cursors) => (usersCursors = cursors),
