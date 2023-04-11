@@ -43,7 +43,8 @@ export class Multiplayer {
 		if (status === SUPABASE_REALTIME_STATUS_SUBSCRIBED) {
 			await this.channel.track({
 				id: this.me.id,
-				name: this.me.name
+				name: this.me.name,
+				time_joined: Date.now()
 			});
 		}
 	}

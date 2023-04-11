@@ -22,6 +22,8 @@ let usersCursors = {};
 // User State
 let multiplayer = null;
 let igv = null;
+let igvState = null;
+let isTheSyncUser = false;
 
 // On first load
 onMount(async () => {
@@ -33,9 +35,13 @@ onMount(async () => {
 		screen: thisScreen,
 		client: supabaseAnon,
 		user: "User " + Math.round(Math.random() * 100),
-		onUpdateUsers: (list) => (usersOnline = list),
-		onUpdateCursors: (cursors) => (usersCursors = cursors),
 		onClick: (c) => (clicked = c),
+		onUpdateCursors: (cursors) => (usersCursors = cursors),
+		onUpdateUsers: (list) => {
+			usersOnline = list;
+			isTheSyncUser = multiplayer.me.id === Object.entries(usersOnline).sort((a, b) => a.time_joined - b.time_joined)?.[0]?.[0];
+			console.log(isTheSyncUser ? "Now handling sync." : "Not handling sync");
+		},
 		onPayload: (payload) => {
 			// Ignore messages to self
 			console.log("Received", payload, multiplayer.me.id, payload.id === multiplayer.me.id ? "NO-OP" : "");
@@ -62,7 +68,25 @@ onMount(async () => {
 
 	// Set cursor to be the current user's pointer
 	thisScreen.style.cursor = `url('data:image/svg+xml;base64,${btoa(thisCursor.outerHTML)}'), pointer`;
+
+	// Background sync job
+	syncIGVState();
 });
+
+// Sync IGV state to database (only the user that's been there the longest runs this)
+async function syncIGVState() {
+	const newState = JSON.stringify({
+		config: igv.browser?.toJSON()
+	});
+
+	if (isTheSyncUser && newState && igvState !== newState) {
+		console.log("newState", newState);
+		await fetch(`/api/v0/rooms/${channel}`, { method: "POST", body: newState });
+		igvState = newState;
+	}
+
+	setTimeout(syncIGVState, 500);
+}
 </script>
 
 <h4>Multiplayer IGV</h4>
@@ -86,17 +110,7 @@ onMount(async () => {
 			}}>Add track</Button
 		>
 
-		<Button
-			on:click={async () => {
-				await fetch(`/api/v0/rooms/${channel}`, {
-					method: "POST",
-					body: JSON.stringify({
-						config: igv.browser.toJSON()
-					})
-				});
-				// await supabaseAnon.from("rooms_stg").update({ config: igv.browser.toJSON() }).eq("uuid", channel);
-			}}>Save</Button
-		>
+		<Button on:click={syncIGVState}>Save</Button>
 	</div>
 	<!-- Who's online? -->
 	<div class="text-end p-0 m-0">
