@@ -181,6 +181,7 @@ export class IGV {
 			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcastSetting("showCenterGuide"));
 			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcastSetting("showCursorTrackingGuide"));
 			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcastSetting("showTrackLabels"));
+			this.browser.sampleNameControl.button.addEventListener("click", () => this.broadcastSetting("showSampleNames"));
 
 			// TODO: Supported events: trackremoved, trackorderchanged, trackclick, trackdrag, trackdragend
 		});
@@ -199,6 +200,8 @@ export class IGV {
 			return this.browser.cursorGuide.horizontalGuide.style.display !== "none";
 		} else if (setting === "showTrackLabels") {
 			return this.browser.trackLabelsVisible;
+		} else if (setting === "showSampleNames") {
+			return this.browser.showSampleNames;
 		}
 	}
 
@@ -221,6 +224,8 @@ export class IGV {
 			this.browser.cursorGuideButton.button.click();
 		} else if (setting === "showTrackLabels") {
 			this.browser.trackLabelControl.button.click();
+		} else if (setting === "showSampleNames") {
+			this.browser.sampleNameControl.button.click();
 		}
 	}
 
@@ -233,9 +238,9 @@ export class IGV {
 
 	// Broadcast setting change
 	broadcastSetting(setting) {
-		// Make sure to only broadcast the new setting if you're the one who made the change
+		// Only broadcast the new setting if you're the one who made the change
 		if (this.skipBroadcast[setting]) {
-			console.log("Don't broadcast", setting);
+			console.log("Don't broadcast", setting, this.get(setting));
 			this.skipBroadcast[setting] = false;
 			return;
 		}

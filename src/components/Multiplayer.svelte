@@ -80,7 +80,6 @@ async function syncIGVState() {
 	});
 
 	if (isTheSyncUser && newState && igvState !== newState) {
-		console.log("newState", newState);
 		await fetch(`/api/v0/rooms/${channel}`, { method: "POST", body: newState });
 		igvState = newState;
 	}
@@ -109,8 +108,6 @@ async function syncIGVState() {
 				console.log("broadcast new track!");
 			}}>Add track</Button
 		>
-
-		<Button on:click={syncIGVState}>Save</Button>
 	</div>
 	<!-- Who's online? -->
 	<div class="text-end p-0 m-0">
@@ -168,7 +165,6 @@ async function syncIGVState() {
 
 <style>
 .screen {
-	border: 1px solid rgb(39, 113, 153);
 	height: 70vh;
 }
 </style>
