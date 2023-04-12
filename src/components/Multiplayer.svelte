@@ -1,6 +1,6 @@
 <script>
 import { onMount } from "svelte";
-import { Button } from "sveltestrap";
+import { Button, Spinner } from "sveltestrap";
 import { debounce } from "debounce";
 import { browser } from "$app/environment";
 import Cursor from "$components/Cursor.svelte";
@@ -18,6 +18,7 @@ let thisScreen;
 let thisIGV;
 let usersOnline = {};
 let usersCursors = {};
+let loading = true;
 
 // User State
 let multiplayer = null;
@@ -65,6 +66,7 @@ onMount(async () => {
 		div: thisIGV
 	});
 	await igv.init();
+	loading = false;
 
 	// Set cursor to be the current user's pointer
 	thisScreen.style.cursor = `url('data:image/svg+xml;base64,${btoa(thisCursor.outerHTML)}'), pointer`;
@@ -103,7 +105,12 @@ function handlePointerMove(e) {
 handlePointerMove = debounce(handlePointerMove, 5);
 </script>
 
-<h4>Multiplayer IGV</h4>
+<h4>
+	Test
+	{#if loading}
+		<Spinner size="sm" color="primary" />
+	{/if}
+</h4>
 
 <!-- Header bar -->
 <div class="d-flex">
@@ -136,6 +143,7 @@ handlePointerMove = debounce(handlePointerMove, 5);
 <!-- Contents of synced view -->
 <div
 	class="screen"
+	class:opacity-25={loading}
 	bind:this={thisScreen}
 	on:pointermove={handlePointerMove}
 	on:pointerleave={handlePointerLeave}

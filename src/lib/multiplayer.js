@@ -174,7 +174,7 @@ export class IGV {
 	async init() {
 		// Create IGV browser (import here to avoid SSR issue)
 		this.igv = (await import("igv")).default;
-		this.igv.createBrowser(this.div, this.settings).then((browser) => {
+		return this.igv.createBrowser(this.div, this.settings).then((browser) => {
 			this.browser = browser;
 			console.log("Created IGV browser", browser);
 
