@@ -1,5 +1,6 @@
 import hash from "string-hash";
 import { nanoid } from "nanoid";
+import { debounce } from "debounce";
 
 // =============================================================================
 // Multiplayer class
@@ -8,6 +9,8 @@ import { nanoid } from "nanoid";
 const SUPABASE_REALTIME_STATUS_SUBSCRIBED = "SUBSCRIBED";
 
 export class Multiplayer {
+	usersOnline = {}; // Users that are still connected, e.g. {"uuid": {"name": "bla"}}
+	usersCursors = {}; // All cursor positions
 	constructor(params) {
 		// Set up params
 		this.client = params.client;
@@ -16,8 +19,6 @@ export class Multiplayer {
 		this.onUpdateCursors = params.onUpdateCursors;
 		this.onClick = params.onClick;
 		this.onPayload = params.onPayload;
-		this.usersOnline = {}; // Users that are still connected, e.g. {"uuid": {"name": "bla"}}
-		this.usersCursors = {}; // All cursor positions
 		this.me = {
 			id: nanoid(10),
 			name: params.user
@@ -62,19 +63,14 @@ export class Multiplayer {
 	}
 
 	onSupabaseBroadcastCursor({ payload }) {
-		if (payload.id) {
-			this.usersCursors[payload.id] = { x: payload.x, y: payload.y };
-			this.onUpdateCursors(this.usersCursors);
-		}
+		this.usersCursors[payload.id] = this.getCursorPositionReceive(payload.x, payload.y);
+		this.onUpdateCursors(this.usersCursors);
 	}
 
 	onSupabaseBroadcastClick({ payload }) {
-		if (payload.id) {
-			this.usersCursors[payload.id] = { x: payload.x, y: payload.y };
-			this.onUpdateCursors(this.usersCursors);
-			this.onClick(payload);
-			setTimeout(() => this.onClick(false), 300);
-		}
+		this.onSupabaseBroadcastCursor({ payload });
+		this.onClick(this.usersCursors[payload.id]);
+		setTimeout(() => this.onClick(false), 300);
 	}
 
 	onSupabaseBroadcastAppEvent({ payload }) {
@@ -86,11 +82,17 @@ export class Multiplayer {
 	// =========================================================================
 
 	broadcast(event, payload) {
-		this.channel.send({
-			type: "broadcast",
-			event: event,
-			payload: { ...payload, id: this.me.id }
-		});
+		this.channel
+			.send({
+				type: "broadcast",
+				event: event,
+				payload: { ...payload, id: this.me.id }
+			})
+			.then((d) => {
+				if (d !== "ok") {
+					console.warn("Broadcast error:", d);
+				}
+			});
 	}
 
 	// Broadcast updated x/y mouse coordinates
@@ -176,8 +178,9 @@ export class IGV {
 			this.browser = browser;
 			console.log("Created IGV browser", browser);
 
-			// Listen to changes to IGV settings
-			this.browser.on("locuschange", () => this.broadcastSetting("locus"));
+			// Listen to changes to IGV settings (debounce `locuschange` because it triggers 2-3 times)
+			const onLocusChange = debounce(() => this.broadcastSetting("locus"), 50);
+			this.browser.on("locuschange", onLocusChange);
 			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcastSetting("showCenterGuide"));
 			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcastSetting("showCursorTrackingGuide"));
 			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcastSetting("showTrackLabels"));
@@ -193,7 +196,7 @@ export class IGV {
 	get(setting) {
 		if (setting === "locus") {
 			const loci = this.browser.referenceFrameList.map((locus) => locus.getLocusString());
-			return loci.join(" ").replace(/,/g, "");
+			return loci.join(" ");
 		} else if (setting === "showCenterGuide") {
 			return this.browser.centerLineList[0].isVisible;
 		} else if (setting === "showCursorTrackingGuide") {
@@ -275,13 +278,4 @@ export class IGV {
 	// 		this.browser.removeTrack(track);
 	// 	}
 	// }
-
-	// =========================================================================
-	// Static class utilities
-	// =========================================================================
-
-	static getLocus(locus) {
-		const locusStr = Array.isArray(locus) ? locus.join(" ") : locus;
-		return locusStr.replace(/,/g, "");
-	}
 }

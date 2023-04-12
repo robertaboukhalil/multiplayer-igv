@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 export const supabaseAnon = createClient(env.PUBLIC_SUPABASE_URL, env.PUBLIC_SUPABASE_KEY_ANON, {
 	realtime: {
 		params: {
-			eventsPerSecond: -1
+			eventsPerSecond: 200
 		}
 	}
 });

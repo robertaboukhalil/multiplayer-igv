@@ -86,6 +86,21 @@ async function syncIGVState() {
 
 	setTimeout(syncIGVState, 500);
 }
+
+// Handle pointer events
+function handlePointerClick(e) {
+	multiplayer.broadcastClick(e);
+}
+
+function handlePointerLeave(e) {
+	multiplayer.broadcastPointerLeave(e);
+}
+
+function handlePointerMove(e) {
+	multiplayer.broadcastPointerMove(e);
+}
+
+handlePointerMove = debounce(handlePointerMove, 5);
 </script>
 
 <h4>Multiplayer IGV</h4>
@@ -122,19 +137,18 @@ async function syncIGVState() {
 <div
 	class="screen"
 	bind:this={thisScreen}
-	on:pointermove={debounce((e) => multiplayer.broadcastPointerMove(e), 50)}
-	on:pointerleave={(e) => multiplayer.broadcastPointerLeave(e)}
-	on:click={(e) => multiplayer.broadcastClick(e)}
+	on:pointermove={handlePointerMove}
+	on:pointerleave={handlePointerLeave}
+	on:click={handlePointerClick}
 	on:keypress={() => {}}
 >
 	<!-- Show click events -->
 	{#if clicked}
-		{@const position = multiplayer.getCursorPositionReceive(clicked.x, clicked.y)}
 		<div
 			class="spinner-grow"
 			style="z-index:9999; background-color: {Multiplayer.getHashColor(
 				usersOnline[clicked?.id]?.name || 'Anonymous'
-			)}; position:absolute; top: {position.y - 15}px; left: {position.x - 15}px"
+			)}; position:absolute; top: {clicked.y - 15}px; left: {clicked.x - 15}px"
 		/>
 	{/if}
 
@@ -158,8 +172,7 @@ async function syncIGVState() {
 <!-- Everyone else's cursors -->
 {#each Object.keys(usersCursors) as id}
 	{#if id !== multiplayer.me.id}
-		{@const position = multiplayer.getCursorPositionReceive(usersCursors[id].x, usersCursors[id].y)}
-		<Cursor name={usersOnline[id]?.name || "Anonymous"} x={position.x} y={position.y} />
+		<Cursor name={usersOnline[id]?.name || "Anonymous"} x={usersCursors[id].x} y={usersCursors[id].y} />
 	{/if}
 {/each}
 
