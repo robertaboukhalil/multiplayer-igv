@@ -40,8 +40,7 @@ export class IGV {
 			console.log("Created IGV browser", browser);
 
 			// Listen to changes to IGV settings (debounce `locuschange` because it triggers 2-3 times)
-			const onLocusChange = debounce(() => this.broadcastSetting(SETTING_LOCUS), 50);
-			this.browser.on("locuschange", onLocusChange);
+			this.browser.on("locuschange", debounce(() => this.broadcastSetting(SETTING_LOCUS), 50)); // prettier-ignore
 			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcastSetting(SETTING_CENTER_LINE));
 			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcastSetting(SETTING_CURSOR_GUIDE));
 			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcastSetting(SETTING_TRACK_LABELS));
@@ -102,7 +101,7 @@ export class IGV {
 			case SETTING_GENOME:
 				return await this.browser.loadGenome(value);
 			case SETTING_TRACKS:
-				if(Array.isArray(value)) return this.browser.loadTracks(value);
+				if (Array.isArray(value)) return this.browser.loadTracks(value);
 				else return this.browser.loadTrack(value);
 
 			// UI settings
@@ -188,6 +187,7 @@ export class IGV {
 
 // Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
 // jq '.[] | { (.id): { name: .name}}' genomes.json | jq -s '.'
+export const IGV_DEFAULT_GENOME = "hg38";
 export const IGV_GENOMES = {
 	hg38: { name: "Human: GRCh38 (hg38)" },
 	hg19: { name: "Human: GRCh37 (hg19)" },

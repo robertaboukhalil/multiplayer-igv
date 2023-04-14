@@ -7,7 +7,7 @@ import Cursor from "$components/Cursor.svelte";
 import Profile from "$components/Profile.svelte";
 import { supabaseAnon } from "$lib/db.public";
 import { Multiplayer } from "$lib/multiplayer";
-import { IGV, IGV_GENOMES } from "$lib/igv";
+import { IGV, IGV_DEFAULT_GENOME, IGV_GENOMES } from "$lib/igv";
 
 export let channel;
 export let config;
@@ -34,7 +34,7 @@ $: updateRefGenome(genome);
 onMount(async () => {
 	if (!browser || !thisScreen) return;
 
-	// Initialize
+	// Initialize Multiplayer logic
 	multiplayer = new Multiplayer({
 		channel,
 		screen: thisScreen,
@@ -60,28 +60,21 @@ onMount(async () => {
 					igv.set(payload.setting, payload.value);
 				}
 			}
-
-			// Process actions
-			else if (payload.type === "action") {
-				igv.process(payload.action, payload.value);
-			}
 		}
 	});
 
-	igv = new IGV({
-		multiplayer,
-		config,
-		div: thisIGV
-	});
-	genome = config?.reference?.id || "hg38";
+	// Initialize IGV
+	genome = config?.reference?.id || IGV_DEFAULT_GENOME;
+	igv = new IGV({ multiplayer, config, div: thisIGV });
 	await igv.init();
-	loading = false;
 
 	// Set cursor to be the current user's pointer
 	thisScreen.style.cursor = `url('data:image/svg+xml;base64,${btoa(thisCursor.outerHTML)}'), pointer`;
 
 	// Background sync job
 	syncIGVState();
+
+	loading = false;
 });
 
 // Sync IGV state to database (only the user that's been there the longest runs this)
