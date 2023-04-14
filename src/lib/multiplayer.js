@@ -238,9 +238,9 @@ export class IGV {
 
 	// Extend IGV's toJSON with our settings of interest
 	toJSON() {
-		const config = igv.browser?.toJSON();
+		const config = this.browser?.toJSON();
 		const settings = [IGV_CENTER_LINE, IGV_TRACK_LABELS, IGV_SAMPLE_NAMES, IGV_CURSOR_GUIDE];
-		settings.forEach((setting) => (config[setting] = igv.get(setting)));
+		settings.forEach((setting) => (config[setting] = this.get(setting)));
 
 		return config;
 	}

@@ -77,10 +77,7 @@ onMount(async () => {
 
 // Sync IGV state to database (only the user that's been there the longest runs this)
 async function syncIGVState() {
-	const newState = JSON.stringify({
-		config: igv.toJSON()
-	});
-
+	const newState = JSON.stringify({ config: igv.toJSON() });
 	if (isTheSyncUser && newState && igvState !== newState) {
 		await fetch(`/api/v0/rooms/${channel}`, { method: "POST", body: newState });
 		igvState = newState;
