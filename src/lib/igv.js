@@ -1,44 +1,25 @@
 import { debounce } from "debounce";
 
-const IGV_LOCUS = "locus";
-const IGV_CENTER_LINE = "showCenterGuide";
-const IGV_TRACK_LABELS = "showTrackLabels";
-const IGV_SAMPLE_NAMES = "showSampleNames";
-const IGV_CURSOR_GUIDE = "showCursorTrackingGuide";
+const SETTING_LOCUS = "locus";
+const SETTING_GENOME = "genome";
+const SETTING_TRACKS = "tracks";
+const SETTING_CENTER_LINE = "showCenterGuide";
+const SETTING_TRACK_LABELS = "showTrackLabels";
+const SETTING_SAMPLE_NAMES = "showSampleNames";
+const SETTING_CURSOR_GUIDE = "showCursorTrackingGuide";
 const IGV_DEFAULTS = {
-	[IGV_CENTER_LINE]: false,
-	[IGV_CURSOR_GUIDE]: false,
-	[IGV_TRACK_LABELS]: true,
-	tracks: []
-};
-// Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
-// jq '.[] | { (.id): { name: .name}}' genomes.json | jq -s '.'
-export const IGV_GENOMES = {
-	hg38: { name: "Human: GRCh38 (hg38)" },
-	hg19: { name: "Human: GRCh37 (hg19)" },
-	"chm13v2.0": { name: "Human: T2T CHM13 v2.0" },
-	"chm13v1.1": { name: "Human: T2T CHM13 v1.1" },
-	mm39: { name: "Mouse: GRCm39/mm39" },
-	rn7: { name: "Rat: rn7" },
-	panTro6: { name: "Chimp: panTro6" },
-	bosTau9: { name: "Cow: bosTau9" },
-	susScr11: { name: "Pig: susScr11" },
-	galGal6: { name: " Chicken: galGal6" },
-	danRer11: { name: "Zebrafish: danRer11" },
-	dm6: { name: "D. melanogaster: dm6" },
-	ce11: { name: "C. elegans: ce11" },
-	sacCer3: { name: "S. cerevisiae: sacCer3" },
-	ASM294v2: { name: "S. pombe: ASM294v2" },
-	ASM985889v3: { name: "Sars-CoV-2: ASM985889v3)" },
-	tair10: { name: "A. thaliana: TAIR 10" }
+	[SETTING_CENTER_LINE]: false,
+	[SETTING_CURSOR_GUIDE]: false,
+	[SETTING_TRACK_LABELS]: true,
+	[SETTING_TRACKS]: []
 };
 
 export class IGV {
 	multiplayer = null; // Multiplayer object
 	igv = null; // IGV library
 	browser = null; // IGV Browser object
-	settings = IGV_DEFAULTS;
-	skipBroadcast = {};
+	settings = {}; // Initial IGV settings
+	skipBroadcast = {}; // Whether to skip the next broadcast
 
 	// -------------------------------------------------------------------------
 	// Initialization
@@ -59,12 +40,12 @@ export class IGV {
 			console.log("Created IGV browser", browser);
 
 			// Listen to changes to IGV settings (debounce `locuschange` because it triggers 2-3 times)
-			const onLocusChange = debounce(() => this.broadcastSetting(IGV_LOCUS), 50);
+			const onLocusChange = debounce(() => this.broadcastSetting(SETTING_LOCUS), 50);
 			this.browser.on("locuschange", onLocusChange);
-			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcastSetting(IGV_CENTER_LINE));
-			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcastSetting(IGV_CURSOR_GUIDE));
-			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcastSetting(IGV_TRACK_LABELS));
-			this.browser.sampleNameControl.button.addEventListener("click", () => this.broadcastSetting(IGV_SAMPLE_NAMES));
+			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcastSetting(SETTING_CENTER_LINE));
+			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcastSetting(SETTING_CURSOR_GUIDE));
+			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcastSetting(SETTING_TRACK_LABELS));
+			this.browser.sampleNameControl.button.addEventListener("click", () => this.broadcastSetting(SETTING_SAMPLE_NAMES));
 
 			// TODO: Supported events: trackremoved, trackorderchanged, trackclick, trackdrag, trackdragend
 		});
@@ -80,22 +61,25 @@ export class IGV {
 	get(setting) {
 		switch (setting) {
 			// Main settings
-			case IGV_LOCUS:
+			case SETTING_LOCUS:
 				const loci = this.browser.referenceFrameList.map((locus) => locus.getLocusString());
 				return loci.join(" ");
-			case "genome":
-				return;
-			case "tracks":
+			case SETTING_GENOME:
+				return this.browser.genome.id;
+			case SETTING_TRACKS:
 				return this.browser.findTracks();
+
 			// UI settings
-			case IGV_CENTER_LINE:
+			case SETTING_CENTER_LINE:
 				return this.browser.centerLineList[0].isVisible;
-			case IGV_CURSOR_GUIDE:
+			case SETTING_CURSOR_GUIDE:
 				return this.browser.cursorGuide.horizontalGuide.style.display !== "none";
-			case IGV_TRACK_LABELS:
+			case SETTING_TRACK_LABELS:
 				return this.browser.trackLabelsVisible;
-			case IGV_SAMPLE_NAMES:
+			case SETTING_SAMPLE_NAMES:
 				return this.browser.showSampleNames;
+
+			// Unknown
 			default:
 				console.error("Unknown IGV setting", setting);
 		}
@@ -111,17 +95,29 @@ export class IGV {
 		// We're updating a setting because of a broadcasted message => don't send one ourselves
 		this.skipBroadcast[setting] = true;
 
-		// Update setting
-		if (setting === IGV_LOCUS) {
-			await this.browser.search(value);
-		} else if (setting === IGV_CENTER_LINE) {
-			this.browser.centerLineButton.button.click();
-		} else if (setting === IGV_CURSOR_GUIDE) {
-			this.browser.cursorGuideButton.button.click();
-		} else if (setting === IGV_TRACK_LABELS) {
-			this.browser.trackLabelControl.button.click();
-		} else if (setting === IGV_SAMPLE_NAMES) {
-			this.browser.sampleNameControl.button.click();
+		switch (setting) {
+			// Main settings
+			case SETTING_LOCUS:
+				return await this.browser.search(value);
+			case SETTING_GENOME:
+				return await this.browser.loadGenome(value);
+			case SETTING_TRACKS:
+				if(Array.isArray(value)) return this.browser.loadTracks(value);
+				else return this.browser.loadTrack(value);
+
+			// UI settings
+			case SETTING_CENTER_LINE:
+				return this.browser.centerLineButton.button.click();
+			case SETTING_CURSOR_GUIDE:
+				return this.browser.cursorGuideButton.button.click();
+			case SETTING_TRACK_LABELS:
+				return this.browser.trackLabelControl.button.click();
+			case SETTING_SAMPLE_NAMES:
+				return this.browser.sampleNameControl.button.click();
+
+			// Unknown
+			default:
+				console.error("Unknown IGV setting", setting);
 		}
 	}
 
@@ -168,7 +164,7 @@ export class IGV {
 	// Extend IGV's toJSON with our settings of interest
 	toJSON() {
 		const config = this.browser?.toJSON();
-		const settings = [IGV_CENTER_LINE, IGV_TRACK_LABELS, IGV_SAMPLE_NAMES, IGV_CURSOR_GUIDE];
+		const settings = [SETTING_CENTER_LINE, SETTING_TRACK_LABELS, SETTING_SAMPLE_NAMES, SETTING_CURSOR_GUIDE];
 		settings.forEach((setting) => (config[setting] = this.get(setting)));
 
 		return config;
@@ -189,3 +185,25 @@ export class IGV {
 	// 	}
 	// }
 }
+
+// Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
+// jq '.[] | { (.id): { name: .name}}' genomes.json | jq -s '.'
+export const IGV_GENOMES = {
+	hg38: { name: "Human: GRCh38 (hg38)" },
+	hg19: { name: "Human: GRCh37 (hg19)" },
+	"chm13v2.0": { name: "Human: T2T CHM13 v2.0" },
+	"chm13v1.1": { name: "Human: T2T CHM13 v1.1" },
+	mm39: { name: "Mouse: GRCm39/mm39" },
+	rn7: { name: "Rat: rn7" },
+	panTro6: { name: "Chimp: panTro6" },
+	bosTau9: { name: "Cow: bosTau9" },
+	susScr11: { name: "Pig: susScr11" },
+	galGal6: { name: " Chicken: galGal6" },
+	danRer11: { name: "Zebrafish: danRer11" },
+	dm6: { name: "D. melanogaster: dm6" },
+	ce11: { name: "C. elegans: ce11" },
+	sacCer3: { name: "S. cerevisiae: sacCer3" },
+	ASM294v2: { name: "S. pombe: ASM294v2" },
+	ASM985889v3: { name: "Sars-CoV-2: ASM985889v3)" },
+	tair10: { name: "A. thaliana: TAIR 10" }
+};
