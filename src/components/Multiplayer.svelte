@@ -6,7 +6,7 @@ import { browser } from "$app/environment";
 import Cursor from "$components/Cursor.svelte";
 import Profile from "$components/Profile.svelte";
 import { supabaseAnon } from "$lib/db.public";
-import { Multiplayer, IGV } from "$lib/multiplayer";
+import { Multiplayer, IGV, IGV_GENOMES } from "$lib/multiplayer";
 
 export let channel;
 export let config;
@@ -19,12 +19,15 @@ let thisIGV;
 let usersOnline = {};
 let usersCursors = {};
 let loading = true;
+let genome;
 
 // User State
 let multiplayer = null;
 let igv = null;
 let igvState = null;
 let isTheSyncUser = false;
+
+$: updateRefGenome(genome);
 
 // On first load
 onMount(async () => {
@@ -50,7 +53,11 @@ onMount(async () => {
 
 			// Update IGV settings
 			if (payload.type === "setting") {
-				igv.set(payload.setting, payload.value);
+				if (payload.setting === "genome") {
+					genome = payload.value;
+				} else {
+					igv.set(payload.setting, payload.value);
+				}
 			}
 
 			// Process actions
@@ -65,6 +72,7 @@ onMount(async () => {
 		config,
 		div: thisIGV
 	});
+	genome = config?.reference?.id || "hg38";
 	await igv.init();
 	loading = false;
 
@@ -84,6 +92,22 @@ async function syncIGVState() {
 	}
 
 	setTimeout(syncIGVState, 500);
+}
+
+// Update ref genome
+async function updateRefGenome() {
+	if (loading || !genome) return;
+
+	loading = true;
+	// igv.broadcastSetting("genome");
+	multiplayer.broadcast("app", {
+		type: "setting",
+		setting: "genome",
+		value: genome
+	});
+
+	await igv.browser.loadGenome(genome);
+	loading = false;
 }
 
 // Handle pointer events
@@ -111,23 +135,39 @@ handlePointerMove = debounce(handlePointerMove, 5);
 
 <!-- Header bar -->
 <div class="d-flex">
-	<div class="me-auto">
-		<Button
-			color="primary"
-			size="md"
-			on:click={() => {
-				const track = {
-					url: "https://s3.amazonaws.com/igv.org.demo/GBM-TP.seg.gz",
-					indexed: false,
-					isLog: true,
-					name: "GBM Copy # (TCGA Broad GDAC)"
-				};
-				igv.process("track-add", track);
-				igv.broadcastAction("track-add", track);
-				console.log("broadcast new track!");
-			}}>Add track</Button
-		>
+	<!-- Choose genome -->
+	<div class="pe-2">
+		<div class="form-floating">
+			<select class="form-select" id="provider" bind:value={genome} disabled={loading}>
+				{#each Object.keys(IGV_GENOMES) as ref}
+					<option value={ref}>{IGV_GENOMES[ref].name}</option>
+				{/each}
+			</select>
+			<label for="provider">Reference Genome</label>
+		</div>
 	</div>
+
+	<!-- Add tracks -->
+	<div class="me-auto">
+		<div class="mt-2">
+			<Button
+				color="primary"
+				size="md"
+				on:click={() => {
+					const track = {
+						url: "https://s3.amazonaws.com/igv.org.demo/GBM-TP.seg.gz",
+						indexed: false,
+						isLog: true,
+						name: "GBM Copy # (TCGA Broad GDAC)"
+					};
+					igv.process("track-add", track);
+					igv.broadcastAction("track-add", track);
+					console.log("broadcast new track!");
+				}}>Add track</Button
+			>
+		</div>
+	</div>
+
 	<!-- Who's online? -->
 	<div class="text-end p-0 m-0">
 		{#each Object.keys(usersOnline).sort() as id}
