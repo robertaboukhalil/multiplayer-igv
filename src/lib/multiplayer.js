@@ -150,10 +150,14 @@ export class Multiplayer {
 // IGV class
 // =============================================================================
 
+const IGV_CENTER_LINE = "showCenterGuide";
+const IGV_TRACK_LABELS = "showTrackLabels";
+const IGV_SAMPLE_NAMES = "showSampleNames";
+const IGV_CURSOR_GUIDE = "showCursorTrackingGuide";
 const IGV_DEFAULTS = {
-	showCenterGuide: false,
-	showCursorTrackingGuide: false,
-	showTrackLabels: true,
+	[IGV_CENTER_LINE]: false,
+	[IGV_CURSOR_GUIDE]: false,
+	[IGV_TRACK_LABELS]: true,
 	tracks: []
 };
 
@@ -181,10 +185,10 @@ export class IGV {
 			// Listen to changes to IGV settings (debounce `locuschange` because it triggers 2-3 times)
 			const onLocusChange = debounce(() => this.broadcastSetting("locus"), 50);
 			this.browser.on("locuschange", onLocusChange);
-			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcastSetting("showCenterGuide"));
-			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcastSetting("showCursorTrackingGuide"));
-			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcastSetting("showTrackLabels"));
-			this.browser.sampleNameControl.button.addEventListener("click", () => this.broadcastSetting("showSampleNames"));
+			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcastSetting(IGV_CENTER_LINE));
+			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcastSetting(IGV_CURSOR_GUIDE));
+			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcastSetting(IGV_TRACK_LABELS));
+			this.browser.sampleNameControl.button.addEventListener("click", () => this.broadcastSetting(IGV_SAMPLE_NAMES));
 
 			// TODO: Supported events: trackremoved, trackorderchanged, trackclick, trackdrag, trackdragend
 		});
@@ -197,13 +201,13 @@ export class IGV {
 		if (setting === "locus") {
 			const loci = this.browser.referenceFrameList.map((locus) => locus.getLocusString());
 			return loci.join(" ");
-		} else if (setting === "showCenterGuide") {
+		} else if (setting === IGV_CENTER_LINE) {
 			return this.browser.centerLineList[0].isVisible;
-		} else if (setting === "showCursorTrackingGuide") {
+		} else if (setting === IGV_CURSOR_GUIDE) {
 			return this.browser.cursorGuide.horizontalGuide.style.display !== "none";
-		} else if (setting === "showTrackLabels") {
+		} else if (setting === IGV_TRACK_LABELS) {
 			return this.browser.trackLabelsVisible;
-		} else if (setting === "showSampleNames") {
+		} else if (setting === IGV_SAMPLE_NAMES) {
 			return this.browser.showSampleNames;
 		}
 	}
@@ -221,15 +225,24 @@ export class IGV {
 		// Update setting
 		if (setting === "locus") {
 			await this.browser.search(value);
-		} else if (setting === "showCenterGuide") {
+		} else if (setting === IGV_CENTER_LINE) {
 			this.browser.centerLineButton.button.click();
-		} else if (setting === "showCursorTrackingGuide") {
+		} else if (setting === IGV_CURSOR_GUIDE) {
 			this.browser.cursorGuideButton.button.click();
-		} else if (setting === "showTrackLabels") {
+		} else if (setting === IGV_TRACK_LABELS) {
 			this.browser.trackLabelControl.button.click();
-		} else if (setting === "showSampleNames") {
+		} else if (setting === IGV_SAMPLE_NAMES) {
 			this.browser.sampleNameControl.button.click();
 		}
+	}
+
+	// Extend IGV's toJSON with our settings of interest
+	toJSON() {
+		const config = igv.browser?.toJSON();
+		const settings = [IGV_CENTER_LINE, IGV_TRACK_LABELS, IGV_SAMPLE_NAMES, IGV_CURSOR_GUIDE];
+		settings.forEach((setting) => (config[setting] = igv.get(setting)));
+
+		return config;
 	}
 
 	// Process an action

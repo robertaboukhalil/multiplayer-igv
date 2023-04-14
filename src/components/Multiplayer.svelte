@@ -78,7 +78,7 @@ onMount(async () => {
 // Sync IGV state to database (only the user that's been there the longest runs this)
 async function syncIGVState() {
 	const newState = JSON.stringify({
-		config: igv.browser?.toJSON()
+		config: igv.toJSON()
 	});
 
 	if (isTheSyncUser && newState && igvState !== newState) {
