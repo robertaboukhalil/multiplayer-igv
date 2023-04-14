@@ -99,7 +99,6 @@ async function updateRefGenome() {
 	if (loading || !genome) return;
 
 	loading = true;
-	// igv.broadcastSetting("genome");
 	multiplayer.broadcast("app", {
 		type: "setting",
 		setting: "genome",

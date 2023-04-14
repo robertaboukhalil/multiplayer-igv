@@ -34,9 +34,9 @@ export class Multiplayer {
 			.subscribe(this.onSupabaseSubscribe.bind(this));
 	}
 
-	// =========================================================================
+	// -------------------------------------------------------------------------
 	// Supabase event handlers
-	// =========================================================================
+	// -------------------------------------------------------------------------
 
 	// Subscribe current user to channel
 	async onSupabaseSubscribe(status) {
@@ -77,9 +77,9 @@ export class Multiplayer {
 		this.onPayload(payload);
 	}
 
-	// =========================================================================
+	// -------------------------------------------------------------------------
 	// Broadcast events
-	// =========================================================================
+	// -------------------------------------------------------------------------
 
 	broadcast(event, payload) {
 		this.channel
@@ -113,9 +113,9 @@ export class Multiplayer {
 		this.broadcast("click", position);
 	}
 
-	// =========================================================================
+	// -------------------------------------------------------------------------
 	// Internal utilities
-	// =========================================================================
+	// -------------------------------------------------------------------------
 
 	// Normalize user's cursor position to current screen size before sending to channel
 	getCursorPositionSend(x, y) {
@@ -133,9 +133,9 @@ export class Multiplayer {
 		};
 	}
 
-	// =========================================================================
+	// -------------------------------------------------------------------------
 	// Static class utilities
-	// =========================================================================
+	// -------------------------------------------------------------------------
 
 	// Hash string into color (for choosing a user's color based on their name)
 	static getHashColor(str) {
@@ -190,6 +190,10 @@ export class IGV {
 	settings = IGV_DEFAULTS;
 	skipBroadcast = {};
 
+	// -------------------------------------------------------------------------
+	// Initialization
+	// -------------------------------------------------------------------------
+
 	constructor({ multiplayer, div, config }) {
 		this.multiplayer = multiplayer;
 		this.div = div;
@@ -216,6 +220,10 @@ export class IGV {
 		});
 	}
 
+	// -------------------------------------------------------------------------
+	// Get/set IGV settings
+	// -------------------------------------------------------------------------
+
 	// Get an IGV setting. Don't use `browser.currentLoci` because that might give fractional coordinates,
 	// e.g. "chr17:7668882.847133762-7690031.847133762", which is broadcast to other users and causes them
 	// to re-broadcast a corrected locus, which can cause infinite loops.
@@ -231,8 +239,6 @@ export class IGV {
 			return this.browser.trackLabelsVisible;
 		} else if (setting === IGV_SAMPLE_NAMES) {
 			return this.browser.showSampleNames;
-		// } else if (setting === IGV_GENOME) {
-		// 	return this.browser.genome.id;
 		}
 	}
 
@@ -257,18 +263,7 @@ export class IGV {
 			this.browser.trackLabelControl.button.click();
 		} else if (setting === IGV_SAMPLE_NAMES) {
 			this.browser.sampleNameControl.button.click();
-			// } else if (setting === IGV_GENOME) {
-			// 	await this.browser.loadGenome(value);
 		}
-	}
-
-	// Extend IGV's toJSON with our settings of interest
-	toJSON() {
-		const config = this.browser?.toJSON();
-		const settings = [IGV_CENTER_LINE, IGV_TRACK_LABELS, IGV_SAMPLE_NAMES, IGV_CURSOR_GUIDE];
-		settings.forEach((setting) => (config[setting] = this.get(setting)));
-
-		return config;
 	}
 
 	// Process an action
@@ -277,6 +272,10 @@ export class IGV {
 			this.browser.loadTrack(value);
 		}
 	}
+
+	// -------------------------------------------------------------------------
+	// Broadcast events
+	// -------------------------------------------------------------------------
 
 	// Broadcast setting change
 	broadcastSetting(setting) {
@@ -301,6 +300,19 @@ export class IGV {
 			action,
 			value
 		});
+	}
+
+	// -------------------------------------------------------------------------
+	// Utilities
+	// -------------------------------------------------------------------------
+
+	// Extend IGV's toJSON with our settings of interest
+	toJSON() {
+		const config = this.browser?.toJSON();
+		const settings = [IGV_CENTER_LINE, IGV_TRACK_LABELS, IGV_SAMPLE_NAMES, IGV_CURSOR_GUIDE];
+		settings.forEach((setting) => (config[setting] = this.get(setting)));
+
+		return config;
 	}
 
 	// // Load tracks defined as JSON config
