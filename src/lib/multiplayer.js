@@ -11,6 +11,7 @@ const SUPABASE_REALTIME_STATUS_SUBSCRIBED = "SUBSCRIBED";
 export class Multiplayer {
 	usersOnline = {}; // Users that are still connected, e.g. {"uuid": {"name": "bla"}}
 	usersCursors = {}; // All cursor positions
+
 	constructor(params) {
 		// Set up params
 		this.client = params.client;
@@ -38,7 +39,6 @@ export class Multiplayer {
 	// Supabase event handlers
 	// -------------------------------------------------------------------------
 
-	// Subscribe current user to channel
 	async onSupabaseSubscribe(status) {
 		console.log("Status =", status);
 		if (status === SUPABASE_REALTIME_STATUS_SUBSCRIBED) {
@@ -50,7 +50,6 @@ export class Multiplayer {
 		}
 	}
 
-	// Whenever the presence of users changes, update our internal state
 	onSupabasePresenceSync() {
 		const presence = this.channel.presenceState();
 		// Remap presence using our UUIDs (could also cleanup cursors but not a large memory use)
@@ -89,9 +88,7 @@ export class Multiplayer {
 				payload: { ...payload, id: this.me.id }
 			})
 			.then((d) => {
-				if (d !== "ok") {
-					console.warn("Broadcast error:", d);
-				}
+				if (d !== "ok") console.warn("Broadcast error:", d);
 			});
 	}
 

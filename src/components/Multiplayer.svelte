@@ -31,7 +31,7 @@ $: updateRefGenome(genome);
 
 // On first load
 onMount(async () => {
-	if (!browser) return;
+	if (!browser || !thisScreen) return;
 
 	// Initialize
 	multiplayer = new Multiplayer({
