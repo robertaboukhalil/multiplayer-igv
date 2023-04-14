@@ -6,7 +6,8 @@ import { browser } from "$app/environment";
 import Cursor from "$components/Cursor.svelte";
 import Profile from "$components/Profile.svelte";
 import { supabaseAnon } from "$lib/db.public";
-import { Multiplayer, IGV, IGV_GENOMES } from "$lib/multiplayer";
+import { Multiplayer } from "$lib/multiplayer";
+import { IGV, IGV_GENOMES } from "$lib/igv";
 
 export let channel;
 export let config;
