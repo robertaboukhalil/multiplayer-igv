@@ -98,7 +98,7 @@ export class IGV {
 		// e.g. cursor guides are boolean ==> click the button only if value doesn't match
 		if (this.get(setting) == value) return;
 
-		// We're updating a setting because of a broadcasted message => don't send one ourselves
+		// If we're updating a setting because of a broadcasted message => don't send one ourselves
 		if (fromBroadcast) {
 			this.skipBroadcast[setting] = true;
 		} else {
@@ -110,8 +110,7 @@ export class IGV {
 			case SETTING_LOCUS:
 				return await this.browser.search(value);
 			case SETTING_GENOME:
-				const tracks = this.browser.toJSON().tracks.filter((track) => !["sequence", "annotation"].includes(track));
-				return await Promise.all([this.browser.loadGenome(value), this.browser.loadTrackList(tracks)]);
+				return await this.browser.loadGenome(value);
 			case SETTING_TRACKS:
 				return Array.isArray(value) ? this.browser.loadTrackList(value) : this.browser.loadTrack(value);
 

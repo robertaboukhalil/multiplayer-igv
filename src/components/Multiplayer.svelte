@@ -7,7 +7,7 @@ import Cursor from "$components/Cursor.svelte";
 import Profile from "$components/Profile.svelte";
 import { supabaseAnon } from "$lib/db.public";
 import { Multiplayer } from "$lib/multiplayer";
-import { IGV, IGV_DEFAULT_GENOME, IGV_GENOMES } from "$lib/igv";
+import { IGV } from "$lib/igv";
 
 export let channel;
 export let config;
@@ -20,15 +20,12 @@ let thisIGV;
 let usersOnline = {};
 let usersCursors = {};
 let loading = true;
-let genome;
 
 // User State
 let multiplayer = null;
 let igv = null;
 let igvState = null;
 let isTheSyncUser = false;
-
-$: updateRefGenome(genome);
 
 // On first load
 onMount(async () => {
@@ -50,7 +47,6 @@ onMount(async () => {
 	});
 
 	// Initialize IGV
-	genome = config?.reference?.id || IGV_DEFAULT_GENOME;
 	igv = new IGV({ multiplayer, config, div: thisIGV });
 	await igv.init();
 
@@ -72,15 +68,6 @@ async function syncIGVState() {
 	}
 
 	setTimeout(syncIGVState, 500);
-}
-
-// Update ref genome
-async function updateRefGenome() {
-	if (loading || !genome) return;
-
-	loading = true;
-	await igv.set("genome", genome);
-	loading = false;
 }
 
 // Handle pointer events
@@ -108,18 +95,6 @@ handlePointerMove = debounce(handlePointerMove, 5);
 
 <!-- Header bar -->
 <div class="d-flex">
-	<!-- Choose genome -->
-	<div class="pe-2">
-		<div class="form-floating">
-			<select class="form-select" id="provider" bind:value={genome} disabled={loading}>
-				{#each Object.keys(IGV_GENOMES) as ref}
-					<option value={ref}>{IGV_GENOMES[ref].name}</option>
-				{/each}
-			</select>
-			<label for="provider">Reference Genome</label>
-		</div>
-	</div>
-
 	<!-- Add tracks -->
 	<div class="me-auto">
 		<div class="mt-2">
