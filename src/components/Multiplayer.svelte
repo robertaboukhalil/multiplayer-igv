@@ -46,20 +46,6 @@ onMount(async () => {
 			usersOnline = list;
 			isTheSyncUser = multiplayer.me.id === Object.entries(usersOnline).sort((a, b) => a.time_joined - b.time_joined)?.[0]?.[0];
 			console.log(isTheSyncUser ? "Now handling sync." : "Not handling sync");
-		},
-		onPayload: (payload) => {
-			// Ignore messages to self
-			console.log("Received", payload, multiplayer.me.id, payload.id === multiplayer.me.id ? "NO-OP" : "");
-			if (payload.id === multiplayer.me.id) return;
-
-			// Update IGV settings
-			if (payload.type === "setting") {
-				if (payload.setting === "genome") {
-					genome = payload.value;
-				} else {
-					igv.set(payload.setting, payload.value);
-				}
-			}
 		}
 	});
 
@@ -93,13 +79,7 @@ async function updateRefGenome() {
 	if (loading || !genome) return;
 
 	loading = true;
-	multiplayer.broadcast("app", {
-		type: "setting",
-		setting: "genome",
-		value: genome
-	});
-
-	await igv.browser.loadGenome(genome);
+	await igv.set("genome", genome);
 	loading = false;
 }
 

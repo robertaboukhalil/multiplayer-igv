@@ -29,6 +29,11 @@ export class IGV {
 		this.multiplayer = multiplayer;
 		this.div = div;
 		this.settings = config || IGV_DEFAULTS;
+
+		// Handle IGV-specific messages
+		this.multiplayer.onAppPayload = (payload) => {
+			this.set(payload.setting, payload.value, true);
+		};
 	}
 
 	// Create IGV browser
@@ -39,12 +44,14 @@ export class IGV {
 			this.browser = browser;
 			console.log("Created IGV browser", browser);
 
-			// Listen to changes to IGV settings (debounce `locuschange` because it triggers 2-3 times)
-			this.browser.on("locuschange", debounce(() => this.broadcastSetting(SETTING_LOCUS), 50)); // prettier-ignore
-			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcastSetting(SETTING_CENTER_LINE));
-			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcastSetting(SETTING_CURSOR_GUIDE));
-			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcastSetting(SETTING_TRACK_LABELS));
-			this.browser.sampleNameControl.button.addEventListener("click", () => this.broadcastSetting(SETTING_SAMPLE_NAMES));
+			// Listen to IGV events (debounce `locuschange` because it triggers 2-3 times)
+			this.browser.on("locuschange", debounce(() => this.broadcast(SETTING_LOCUS), 50)); // prettier-ignore
+
+			// Listen to button clicks
+			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcast(SETTING_CENTER_LINE));
+			this.browser.cursorGuideButton.button.addEventListener("click", () => this.broadcast(SETTING_CURSOR_GUIDE));
+			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcast(SETTING_TRACK_LABELS));
+			this.browser.sampleNameControl.button.addEventListener("click", () => this.broadcast(SETTING_SAMPLE_NAMES));
 
 			// TODO: Supported events: trackremoved, trackorderchanged, trackclick, trackdrag, trackdragend
 		});
@@ -84,25 +91,29 @@ export class IGV {
 		}
 	}
 
-	// Set an IGV setting (only called when receive broadcasted message)
-	async set(setting, value) {
+	// Set an IGV setting (usually called from broadcasted message, unless it's for a event not tracked by IGV)
+	async set(setting, value, fromBroadcast = false) {
 		console.log(`Set |${setting}| = |${value}|`, this.get(setting) == value ? "NO-OP" : "");
 		// If already at the value of interest, don't do anything
 		// e.g. cursor guides are boolean ==> click the button only if value doesn't match
 		if (this.get(setting) == value) return;
 
 		// We're updating a setting because of a broadcasted message => don't send one ourselves
-		this.skipBroadcast[setting] = true;
+		if (fromBroadcast) {
+			this.skipBroadcast[setting] = true;
+		} else {
+			this.broadcast(setting);
+		}
 
 		switch (setting) {
 			// Main settings
 			case SETTING_LOCUS:
 				return await this.browser.search(value);
 			case SETTING_GENOME:
-				return await this.browser.loadGenome(value);
+				const tracks = this.browser.toJSON().tracks.filter((track) => !["sequence", "annotation"].includes(track));
+				return await Promise.all([this.browser.loadGenome(value), this.browser.loadTrackList(tracks)]);
 			case SETTING_TRACKS:
-				if (Array.isArray(value)) return this.browser.loadTracks(value);
-				else return this.browser.loadTrack(value);
+				return Array.isArray(value) ? this.browser.loadTrackList(value) : this.browser.loadTrack(value);
 
 			// UI settings
 			case SETTING_CENTER_LINE:
@@ -120,19 +131,11 @@ export class IGV {
 		}
 	}
 
-	// Process an action
-	process(action, value) {
-		if (action === "track-add") {
-			this.browser.loadTrack(value);
-		}
-	}
-
 	// -------------------------------------------------------------------------
 	// Broadcast events
 	// -------------------------------------------------------------------------
 
-	// Broadcast setting change
-	broadcastSetting(setting) {
+	broadcast(setting) {
 		// Only broadcast the new setting if you're the one who made the change
 		if (this.skipBroadcast[setting]) {
 			console.log("Don't broadcast", setting, this.get(setting));
@@ -141,18 +144,8 @@ export class IGV {
 		}
 
 		this.multiplayer.broadcast("app", {
-			type: "setting",
-			setting: setting,
+			setting,
 			value: this.get(setting)
-		});
-	}
-
-	// Broadcast action
-	broadcastAction(action, value) {
-		this.multiplayer.broadcast("app", {
-			type: "action",
-			action,
-			value
 		});
 	}
 

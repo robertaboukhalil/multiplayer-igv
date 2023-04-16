@@ -14,7 +14,7 @@ export class Multiplayer {
 		this.onUpdateUsers = params.onUpdateUsers;
 		this.onUpdateCursors = params.onUpdateCursors;
 		this.onClick = params.onClick;
-		this.onPayload = params.onPayload;
+		this.onAppPayload = params.onAppPayload;
 		this.me = {
 			id: nanoid(10),
 			name: params.user
@@ -68,7 +68,12 @@ export class Multiplayer {
 	}
 
 	onSupabaseBroadcastAppEvent({ payload }) {
-		this.onPayload(payload);
+		// Ignore messages to self
+		console.log("Received", payload, this.me.id, payload.id === this.me.id ? "NO-OP" : "");
+		if (payload.id === this.me.id) return;
+
+		// Run custom payload processing
+		this.onAppPayload(payload);
 	}
 
 	// -------------------------------------------------------------------------
