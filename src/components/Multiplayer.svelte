@@ -114,9 +114,7 @@ handlePointerMove = debounce(handlePointerMove, 5);
 						isLog: true,
 						name: "GBM Copy # (TCGA Broad GDAC)"
 					};
-					igv.process("track-add", track);
-					igv.broadcastAction("track-add", track);
-					console.log("broadcast new track!");
+					igv.set("tracks", track);
 				}}>Add track</Button
 			>
 		</div>
