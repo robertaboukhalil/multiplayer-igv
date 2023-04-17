@@ -51,6 +51,7 @@ export class IGV {
 			// Listen to IGV events (debounce `locuschange` because it triggers 2-3 times)
 			this.browser.on("locuschange", debounce(() => this.broadcast(SETTING_LOCUS), 50)); // prettier-ignore
 			this.browser.on("trackremoved", () => this.broadcast(SETTING_TRACKS));
+			this.browser.on("trackorderchanged", () => this.broadcast(SETTING_TRACKS));
 
 			// Listen to button clicks
 			this.browser.centerLineButton.button.addEventListener("click", () => this.broadcast(SETTING_CENTER_LINE));
@@ -58,7 +59,7 @@ export class IGV {
 			this.browser.trackLabelControl.button.addEventListener("click", () => this.broadcast(SETTING_TRACK_LABELS));
 			this.browser.sampleNameControl.button.addEventListener("click", () => this.broadcast(SETTING_SAMPLE_NAMES));
 
-			// TODO: Supported events: trackremoved, trackorderchanged, trackclick, trackdrag, trackdragend
+			// TODO: Supported events: trackclick, trackdrag, trackdragend
 		});
 	}
 
@@ -118,7 +119,7 @@ export class IGV {
 				await this.browser.search(value);
 				break;
 			case SETTING_TRACKS:
-				if(Array.isArray(value)) {
+				if (Array.isArray(value)) {
 					this.browser.removeAllTracks();
 					await this.browser.loadTrackList(value);
 				} else {
@@ -160,7 +161,7 @@ export class IGV {
 
 	broadcast(setting) {
 		// Don't broadcast (or call .get()) if we're busy waiting for a new setting to be applied
-		if(this.busy) {
+		if (this.busy) {
 			console.log("Don't broadcast", setting, "-- Busy updating a setting");
 			return;
 		}
