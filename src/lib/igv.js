@@ -7,11 +7,14 @@ const SETTING_CENTER_LINE = "showCenterGuide";
 const SETTING_TRACK_LABELS = "showTrackLabels";
 const SETTING_SAMPLE_NAMES = "showSampleNames";
 const SETTING_CURSOR_GUIDE = "showCursorTrackingGuide";
+
+const IGV_DEFAULT_GENOME = "hg38";
 const IGV_DEFAULTS = {
 	[SETTING_CENTER_LINE]: false,
 	[SETTING_CURSOR_GUIDE]: false,
 	[SETTING_TRACK_LABELS]: true,
-	[SETTING_TRACKS]: []
+	[SETTING_TRACKS]: [],
+	[SETTING_GENOME]: IGV_DEFAULT_GENOME
 };
 
 export class IGV {
@@ -70,8 +73,6 @@ export class IGV {
 			case SETTING_LOCUS:
 				const loci = this.browser.referenceFrameList.map((locus) => locus.getLocusString());
 				return loci.join(" ");
-			case SETTING_GENOME:
-				return this.browser.genome.id;
 			case SETTING_TRACKS:
 				return this.browser.findTracks();
 
@@ -101,32 +102,41 @@ export class IGV {
 		// If we're updating a setting because of a broadcasted message => don't send one ourselves
 		if (fromBroadcast) {
 			this.skipBroadcast[setting] = true;
-		} else {
-			this.broadcast(setting);
 		}
 
 		switch (setting) {
 			// Main settings
 			case SETTING_LOCUS:
-				return await this.browser.search(value);
-			case SETTING_GENOME:
-				return await this.browser.loadGenome(value);
+				await this.browser.search(value);
+				break;
 			case SETTING_TRACKS:
-				return Array.isArray(value) ? this.browser.loadTrackList(value) : this.browser.loadTrack(value);
+				Array.isArray(value) ? this.browser.loadTrackList(value) : this.browser.loadTrack(value);
+				break;
 
 			// UI settings
 			case SETTING_CENTER_LINE:
-				return this.browser.centerLineButton.button.click();
+				this.browser.centerLineButton.button.click();
+				break;
 			case SETTING_CURSOR_GUIDE:
-				return this.browser.cursorGuideButton.button.click();
+				this.browser.cursorGuideButton.button.click();
+				break;
 			case SETTING_TRACK_LABELS:
-				return this.browser.trackLabelControl.button.click();
+				this.browser.trackLabelControl.button.click();
+				break;
 			case SETTING_SAMPLE_NAMES:
-				return this.browser.sampleNameControl.button.click();
+				this.browser.sampleNameControl.button.click();
+				break;
 
 			// Unknown
 			default:
 				console.error("Unknown IGV setting", setting);
+				return;
+		}
+
+		// If this setting was set from the app (i.e. not an IGV event listener)
+		// then broadcast the change to other users.
+		if (!fromBroadcast) {
+			// this.broadcast(setting);
 		}
 	}
 
@@ -179,7 +189,6 @@ export class IGV {
 
 // Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
 // jq '.[] | { (.id): { name: .name}}' genomes.json | jq -s '.'
-export const IGV_DEFAULT_GENOME = "hg38";
 export const IGV_GENOMES = {
 	hg38: { name: "Human: GRCh38 (hg38)" },
 	hg19: { name: "Human: GRCh37 (hg19)" },

@@ -47,7 +47,11 @@ onMount(async () => {
 	});
 
 	// Initialize IGV
-	igv = new IGV({ multiplayer, config, div: thisIGV });
+	igv = new IGV({
+		config,
+		multiplayer,
+		div: thisIGV
+	});
 	await igv.init();
 
 	// Set cursor to be the current user's pointer
@@ -61,8 +65,10 @@ onMount(async () => {
 
 // Sync IGV state to database (only the user that's been there the longest runs this)
 async function syncIGVState() {
-	const newState = JSON.stringify({ config: igv.toJSON() });
-	if (isTheSyncUser && newState && igvState !== newState) {
+	const newState = JSON.stringify({
+		config: igv.toJSON()
+	});
+	if (!loading && isTheSyncUser && newState && igvState !== newState) {
 		await fetch(`/api/v0/rooms/${channel}`, { method: "POST", body: newState });
 		igvState = newState;
 	}
