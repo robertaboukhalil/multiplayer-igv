@@ -6,6 +6,7 @@ import {
 	DropdownItem,
 	DropdownMenu,
 	DropdownToggle,
+	FormGroup,
 	Icon,
 	Input,
 	Modal,
@@ -35,15 +36,22 @@ let thisIGV;
 let usersOnline = {};
 let usersCursors = {};
 let loading = true;
-let toggleRenameRoom = () => (isOpenRenameRoom = !isOpenRenameRoom);
-let isOpenRenameRoom;
-let nameNew = name;
 
 // User State
 let multiplayer = null;
 let igv = null;
 let igvState = null;
 let isTheSyncUser = false;
+
+// Modals
+let nameNew = name;
+let newTrackUrl = "";
+let newTrackUrlIndex = "";
+let newTrackName = "My New Track";
+let toggleRenameRoom = () => (isOpenRenameRoom = !isOpenRenameRoom);
+let isOpenRenameRoom;
+let toggleImportURL = () => (isOpenImportURL = !isOpenImportURL);
+let isOpenImportURL;
 
 // On first load
 onMount(async () => {
@@ -145,7 +153,7 @@ handlePointerMove = debounce(handlePointerMove, 5);
 		<ButtonDropdown>
 			<DropdownToggle color="primary" caret>Add Track</DropdownToggle>
 			<DropdownMenu>
-				<DropdownItem>Import from URL</DropdownItem>
+				<DropdownItem on:click={toggleImportURL}>Import from URL</DropdownItem>
 				<DropdownItem divider />
 				<DropdownItem
 					on:click={() => {
@@ -183,8 +191,10 @@ handlePointerMove = debounce(handlePointerMove, 5);
 	<!-- Who's online? -->
 	<div class="text-end p-0 m-0">
 		{#each Object.keys(usersOnline).sort() as id}
-			{@const name = usersOnline[id]?.name || "Anonymous"}
-			<Profile {name} isSelf={id === multiplayer.me.id} />
+			{@const name = usersOnline[id]?.name}
+			{#if name}
+				<Profile {name} isSelf={id === multiplayer.me.id} />
+			{/if}
 		{/each}
 	</div>
 </div>
@@ -252,6 +262,37 @@ handlePointerMove = debounce(handlePointerMove, 5);
 			}}>Save</Button
 		>
 		<Button color="secondary" on:click={toggleRenameRoom}>Cancel</Button>
+	</ModalFooter>
+</Modal>
+
+<!-- Modal for importing URL -->
+<Modal isOpen={isOpenImportURL} toggle={toggleImportURL}>
+	<ModalHeader toggle={toggleImportURL}>Import from URL</ModalHeader>
+	<ModalBody>
+		<FormGroup floating label="Data URL (e.g. .bam, .vcf)">
+			<Input bind:value={newTrackUrl} />
+		</FormGroup>
+		<FormGroup floating label="Index URL (e.g. .bai, .tbi)">
+			<Input bind:value={newTrackUrlIndex} />
+		</FormGroup>
+		<FormGroup floating label="Track Name">
+			<Input bind:value={newTrackName} />
+		</FormGroup>
+	</ModalBody>
+	<ModalFooter>
+		<Button
+			color="primary"
+			disabled={!newTrackUrl || !newTrackName}
+			on:click={() => {
+				igv.set("tracks", {
+					url: newTrackUrl,
+					indexURL: newTrackUrlIndex,
+					name: newTrackName
+				});
+				toggleImportURL();
+			}}>Save</Button
+		>
+		<Button color="secondary" on:click={toggleImportURL}>Cancel</Button>
 	</ModalFooter>
 </Modal>
 
