@@ -6,6 +6,6 @@ export async function load({ params }) {
 	return {
 		channel: params.channel,
 		config: data.config,
-		name: data.name,
+		name: data.name
 	};
 }

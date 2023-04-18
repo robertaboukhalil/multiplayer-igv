@@ -1,6 +1,6 @@
 <script>
 import { onMount } from "svelte";
-import { Button, Spinner } from "sveltestrap";
+import { Button, Icon, Input, Modal, ModalBody, ModalFooter, ModalHeader, Spinner } from "sveltestrap";
 import { debounce } from "debounce";
 import { browser } from "$app/environment";
 import Cursor from "$components/Cursor.svelte";
@@ -11,6 +11,7 @@ import { IGV } from "$lib/igv";
 
 export let channel;
 export let config;
+export let name;
 
 // Screen state
 let clicked; // If true, shows click animation at position clicked.x/y
@@ -20,6 +21,9 @@ let thisIGV;
 let usersOnline = {};
 let usersCursors = {};
 let loading = true;
+let toggleRenameRoom = () => (isOpenRenameRoom = !isOpenRenameRoom);
+let isOpenRenameRoom;
+let nameNew = name;
 
 // User State
 let multiplayer = null;
@@ -50,7 +54,12 @@ onMount(async () => {
 	igv = new IGV({
 		config,
 		multiplayer,
-		div: thisIGV
+		div: thisIGV,
+		onAppPayload: (payload) => {
+			if (payload.setting === "name") {
+				name = payload.value;
+			}
+		}
 	});
 	await igv.init();
 
@@ -66,6 +75,7 @@ onMount(async () => {
 // Sync IGV state to database (only the user that's been there the longest runs this)
 async function syncIGVState() {
 	const newState = JSON.stringify({
+		name,
 		config: igv.toJSON()
 	});
 	if (!loading && isTheSyncUser && newState && igvState !== newState) {
@@ -93,11 +103,37 @@ handlePointerMove = debounce(handlePointerMove, 5);
 </script>
 
 <h4>
-	Test
+	{name || "Untitled Session"}
+	<small class="text-secondary small">
+		<Button on:click={toggleRenameRoom} size="sm">
+			<Icon name="pencil">sdf</Icon>
+		</Button>
+	</small>
 	{#if loading}
 		<Spinner size="sm" color="primary" />
 	{/if}
 </h4>
+
+<Modal isOpen={isOpenRenameRoom} toggle={toggleRenameRoom}>
+	<ModalHeader toggle={toggleRenameRoom}>Rename Session</ModalHeader>
+	<ModalBody>
+		<Input type="text" bind:value={nameNew} />
+	</ModalBody>
+	<ModalFooter>
+		<Button
+			color="primary"
+			on:click={() => {
+				name = nameNew;
+				toggleRenameRoom();
+				multiplayer.broadcast("app", {
+					setting: "name",
+					value: nameNew
+				});
+			}}>Save</Button
+		>
+		<Button color="secondary" on:click={toggleRenameRoom}>Cancel</Button>
+	</ModalFooter>
+</Modal>
 
 <!-- Header bar -->
 <div class="d-flex">

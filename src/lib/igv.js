@@ -7,6 +7,15 @@ const SETTING_CENTER_LINE = "showCenterGuide";
 const SETTING_TRACK_LABELS = "showTrackLabels";
 const SETTING_SAMPLE_NAMES = "showSampleNames";
 const SETTING_CURSOR_GUIDE = "showCursorTrackingGuide";
+const SETTINGS = [
+	SETTING_LOCUS,
+	SETTING_GENOME,
+	SETTING_TRACKS,
+	SETTING_CENTER_LINE,
+	SETTING_TRACK_LABELS,
+	SETTING_SAMPLE_NAMES,
+	SETTING_CURSOR_GUIDE
+];
 
 const IGV_DEFAULT_GENOME = "hg38";
 export const IGV_DEFAULTS = {
@@ -28,7 +37,7 @@ export class IGV {
 	// Initialization
 	// -------------------------------------------------------------------------
 
-	constructor({ multiplayer, div, config }) {
+	constructor({ multiplayer, div, config, onAppPayload }) {
 		this.multiplayer = multiplayer;
 		this.div = div;
 		this.settings = config || IGV_DEFAULTS;
@@ -36,7 +45,9 @@ export class IGV {
 
 		// Handle IGV-specific messages
 		this.multiplayer.onAppPayload = (payload) => {
-			this.set(payload.setting, payload.value, true);
+			if (SETTINGS.includes(payload.setting)) this.set(payload.setting, payload.value, true);
+			else if (onAppPayload) onAppPayload(payload);
+			else console.error("Unrecognized payload", payload);
 		};
 	}
 
