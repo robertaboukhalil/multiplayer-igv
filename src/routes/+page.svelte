@@ -1,10 +1,10 @@
 <script>
 import { goto } from "$app/navigation";
-import { IGV_GENOMES } from "$lib/igv";
+import { IGV_DEFAULT_GENOME, IGV_GENOMES } from "$lib/igv";
 import { Alert, Button } from "sveltestrap";
 
 let error = "";
-let genome = "hg38";
+let genome = IGV_DEFAULT_GENOME;
 let loading = false;
 
 async function createSession() {

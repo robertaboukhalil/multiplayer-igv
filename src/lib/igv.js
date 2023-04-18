@@ -17,7 +17,7 @@ const SETTINGS = [
 	SETTING_CURSOR_GUIDE
 ];
 
-const IGV_DEFAULT_GENOME = "hg38";
+export const IGV_DEFAULT_GENOME = "hg19";
 export const IGV_DEFAULTS = {
 	[SETTING_CENTER_LINE]: false,
 	[SETTING_CURSOR_GUIDE]: false,

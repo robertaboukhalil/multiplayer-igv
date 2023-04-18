@@ -1,6 +1,19 @@
 <script>
 import { onMount } from "svelte";
-import { Button, Icon, Input, Modal, ModalBody, ModalFooter, ModalHeader, Spinner } from "sveltestrap";
+import {
+	Button,
+	ButtonDropdown,
+	DropdownItem,
+	DropdownMenu,
+	DropdownToggle,
+	Icon,
+	Input,
+	Modal,
+	ModalBody,
+	ModalFooter,
+	ModalHeader,
+	Spinner
+} from "sveltestrap";
 import { debounce } from "debounce";
 import { generateUsername } from "unique-username-generator";
 import { browser } from "$app/environment";
@@ -107,7 +120,7 @@ handlePointerMove = debounce(handlePointerMove, 5);
 	{name || "Untitled Session"}
 
 	<!-- Rename session -->
-	<small class="text-secondary small">
+	<small class="text-secondary small ps-3">
 		<Button on:click={toggleRenameRoom} size="sm" color="outline-primary" disabled={loading}>
 			<Icon name="pencil" /> Rename
 		</Button>
@@ -125,46 +138,46 @@ handlePointerMove = debounce(handlePointerMove, 5);
 	{/if}
 </h4>
 
-<Modal isOpen={isOpenRenameRoom} toggle={toggleRenameRoom}>
-	<ModalHeader toggle={toggleRenameRoom}>Rename Session</ModalHeader>
-	<ModalBody>
-		<Input type="text" bind:value={nameNew} />
-	</ModalBody>
-	<ModalFooter>
-		<Button
-			color="primary"
-			on:click={() => {
-				name = nameNew;
-				toggleRenameRoom();
-				multiplayer.broadcast("app", {
-					setting: "name",
-					value: nameNew
-				});
-			}}>Save</Button
-		>
-		<Button color="secondary" on:click={toggleRenameRoom}>Cancel</Button>
-	</ModalFooter>
-</Modal>
-
 <!-- Header bar -->
 <div class="d-flex">
 	<!-- Add tracks -->
 	<div class="me-auto">
-		<div class="mt-2">
-			<Button
-				color="primary"
-				size="md"
-				on:click={() => {
-					const track = {
-						url: "https://s3.amazonaws.com/igv.org.demo/GBM-TP.seg.gz",
-						indexed: false,
-						isLog: true,
-						name: "GBM Copy # (TCGA Broad GDAC)"
-					};
-					igv.set("tracks", track);
-				}}>Add track</Button
-			>
-		</div>
+		<ButtonDropdown>
+			<DropdownToggle color="primary" caret>Add Track</DropdownToggle>
+			<DropdownMenu>
+				<DropdownItem>Import from URL</DropdownItem>
+				<DropdownItem divider />
+				<DropdownItem
+					on:click={() => {
+						igv.set("tracks", {
+							url: "https://s3.amazonaws.com/igv.org.demo/GBM-TP.seg.gz",
+							indexed: false,
+							isLog: true,
+							name: "GBM Copy Number (TCGA Broad GDAC)"
+						});
+					}}>GBM Copy Number (TCGA Broad GDAC)</DropdownItem
+				>
+				<DropdownItem
+					on:click={() => {
+						igv.set("tracks", {
+							url: "https://s3.amazonaws.com/igv.org.demo/SKBR3/SKBR3_550bp_pcrFREE_S1_L001_AND_L002_R1_001.101bp.bwamem.ill.mapped.sort.bam",
+							indexURL:
+								"https://s3.amazonaws.com/igv.org.demo/SKBR3/SKBR3_550bp_pcrFREE_S1_L001_AND_L002_R1_001.101bp.bwamem.ill.mapped.sort.bam.bai",
+							name: "SKBR3 Cell-Line - Illumina (Schatz Lab)"
+						});
+					}}>SKBR3 Cell-Line - Illumina (Schatz Lab)</DropdownItem
+				>
+				<DropdownItem
+					on:click={() => {
+						igv.set("tracks", {
+							url: "https://s3.amazonaws.com/igv.org.demo/SKBR3/reads_lr_skbr3.fa_ngmlr-0.2.3_mapped.bam",
+							indexURL: "https://s3.amazonaws.com/igv.org.demo/SKBR3/reads_lr_skbr3.fa_ngmlr-0.2.3_mapped.bam.bai",
+							name: "SKBR3 Cell-Line - PacBio (Schatz Lab)"
+						});
+					}}>SKBR3 Cell-Line - PacBio (Schatz Lab)</DropdownItem
+				>
+			</DropdownMenu>
+		</ButtonDropdown>
 	</div>
 
 	<!-- Who's online? -->
@@ -219,6 +232,28 @@ handlePointerMove = debounce(handlePointerMove, 5);
 		<Cursor name={usersOnline[id]?.name || "Anonymous"} x={usersCursors[id].x} y={usersCursors[id].y} />
 	{/if}
 {/each}
+
+<!-- Modal to rename the session -->
+<Modal isOpen={isOpenRenameRoom} toggle={toggleRenameRoom}>
+	<ModalHeader toggle={toggleRenameRoom}>Rename Session</ModalHeader>
+	<ModalBody>
+		<Input type="text" bind:value={nameNew} />
+	</ModalBody>
+	<ModalFooter>
+		<Button
+			color="primary"
+			on:click={() => {
+				name = nameNew;
+				toggleRenameRoom();
+				multiplayer.broadcast("app", {
+					setting: "name",
+					value: nameNew
+				});
+			}}>Save</Button
+		>
+		<Button color="secondary" on:click={toggleRenameRoom}>Cancel</Button>
+	</ModalFooter>
+</Modal>
 
 <style>
 .screen {

@@ -1,14 +1,15 @@
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "$lib/db.admin";
-import { IGV_DEFAULTS } from "$lib/igv";
+import { IGV_DEFAULTS, IGV_DEFAULT_GENOME, IGV_GENOMES } from "$lib/igv";
 
 // Create new room
 export async function POST({ request }) {
-	const { genome } = await request.json();
+	const payload = await request.json();
+	const genome = payload.genome || IGV_DEFAULT_GENOME;
 	const uuid = nanoid(10);
 	const config = {
 		...IGV_DEFAULTS,
-		genome: genome || "hg38"
+		genome
 	};
 
 	const { data, error } = await supabaseAdmin.from("rooms_stg").insert({
