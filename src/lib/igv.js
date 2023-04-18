@@ -9,7 +9,7 @@ const SETTING_SAMPLE_NAMES = "showSampleNames";
 const SETTING_CURSOR_GUIDE = "showCursorTrackingGuide";
 
 const IGV_DEFAULT_GENOME = "hg38";
-const IGV_DEFAULTS = {
+export const IGV_DEFAULTS = {
 	[SETTING_CENTER_LINE]: false,
 	[SETTING_CURSOR_GUIDE]: false,
 	[SETTING_TRACK_LABELS]: true,

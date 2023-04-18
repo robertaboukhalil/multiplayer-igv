@@ -5,6 +5,7 @@ export async function load({ params }) {
 
 	return {
 		channel: params.channel,
-		config: data.config
+		config: data.config,
+		name: data.name,
 	};
 }
