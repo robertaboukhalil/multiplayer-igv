@@ -27,6 +27,7 @@ import { IGV } from "$lib/igv";
 export let channel;
 export let config;
 export let name;
+export let comments;
 
 // Screen state
 let clicked; // If true, shows click animation at position clicked.x/y
@@ -42,6 +43,7 @@ let multiplayer = null;
 let igv = null;
 let igvState = null;
 let isTheSyncUser = false;
+let locus = config.locus;
 
 // Modals
 let nameNew = name;
@@ -78,8 +80,12 @@ onMount(async () => {
 		multiplayer,
 		div: thisIGV,
 		onAppPayload: (payload) => {
-			if (payload.setting === "name") {
+			if(payload.setting === "locus") {
+				locus = payload.value;
+			} else if (payload.setting === "name") {
 				name = payload.value;
+			} else if(payload.setting === "comments") {
+				comments = payload.value;
 			}
 		}
 	});
@@ -147,7 +153,7 @@ handlePointerMove = debounce(handlePointerMove, 5);
 </h4>
 
 <!-- Header bar -->
-<div class="d-flex">
+<div class="d-flex mt-3">
 	<!-- Add tracks -->
 	<div class="me-auto">
 		<ButtonDropdown>

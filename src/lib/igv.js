@@ -46,8 +46,7 @@ export class IGV {
 		// Handle IGV-specific messages
 		this.multiplayer.onAppPayload = (payload) => {
 			if (SETTINGS.includes(payload.setting)) this.set(payload.setting, payload.value, true);
-			else if (onAppPayload) onAppPayload(payload);
-			else console.error("Unrecognized payload", payload);
+			if (onAppPayload) onAppPayload(payload);
 		};
 	}
 

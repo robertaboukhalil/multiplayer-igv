@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "$lib/db.admin";
-import { IGV_DEFAULTS, IGV_DEFAULT_GENOME, IGV_GENOMES } from "$lib/igv";
+import { IGV_DEFAULTS, IGV_DEFAULT_GENOME } from "$lib/igv";
 
 // Create new room
 export async function POST({ request }) {
