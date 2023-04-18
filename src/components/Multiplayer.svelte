@@ -2,6 +2,7 @@
 import { onMount } from "svelte";
 import { Button, Icon, Input, Modal, ModalBody, ModalFooter, ModalHeader, Spinner } from "sveltestrap";
 import { debounce } from "debounce";
+import { generateUsername } from "unique-username-generator";
 import { browser } from "$app/environment";
 import Cursor from "$components/Cursor.svelte";
 import Profile from "$components/Profile.svelte";
@@ -40,7 +41,7 @@ onMount(async () => {
 		channel,
 		screen: thisScreen,
 		client: supabaseAnon,
-		user: "User " + Math.round(Math.random() * 100),
+		user: generateUsername(" "),
 		onClick: (c) => (clicked = c),
 		onUpdateCursors: (cursors) => (usersCursors = cursors),
 		onUpdateUsers: (list) => {
@@ -104,11 +105,21 @@ handlePointerMove = debounce(handlePointerMove, 5);
 
 <h4>
 	{name || "Untitled Session"}
+
+	<!-- Rename session -->
 	<small class="text-secondary small">
-		<Button on:click={toggleRenameRoom} size="sm">
-			<Icon name="pencil">sdf</Icon>
+		<Button on:click={toggleRenameRoom} size="sm" color="outline-primary" disabled={loading}>
+			<Icon name="pencil" /> Rename
 		</Button>
 	</small>
+
+	<!-- Share link -->
+	<small class="text-secondary small">
+		<Button on:click={() => navigator.clipboard.writeText(window.location.toString())} size="sm" color="outline-primary" disabled={loading}>
+			<Icon name="clipboard" /> Copy URL
+		</Button>
+	</small>
+
 	{#if loading}
 		<Spinner size="sm" color="primary" />
 	{/if}
