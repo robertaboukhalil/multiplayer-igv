@@ -205,23 +205,39 @@ handlePointerMove = debounce(handlePointerMove, 5);
 		<Button
 			disabled={loading}
 			color="outline-primary"
-			on:click={toggleNameRegion}>Save Region</Button
+			on:click={() => {
+				const region = regions.find((r) => r.locus === igv.get("locus"));
+				console.log("region", region, regions, igv.get("locus"));
+				if (region) regionNameNew = region.name;
+				else regionNameNew = "";
+				toggleNameRegion();
+			}}>Save Region</Button
 		>
 
 		<ButtonDropdown>
 			<DropdownToggle color="outline-primary" caret>Saved regions</DropdownToggle>
 			<DropdownMenu>
-				{#each regions as region}
+				{#each regions as region, i}
 					<DropdownItem on:click={() => igv.set("locus", region.locus)}>
 						<strong>{region.name}</strong>: <code>{region.locus}</code>
+						<Button
+							color="outline-secondary"
+							on:click={(e) => {
+								regions.splice(i, 1);
+								regions = regions;
+								multiplayer.broadcast("app", {
+									setting: "regions",
+									value: regions
+								});
+								e.stopPropagation();
+							}}
+						>
+							<Icon name="trash" />
+						</Button>
 					</DropdownItem>
 				{/each}
 			</DropdownMenu>
 		</ButtonDropdown>
-
-		<Button disabled={loading} color="outline-secondary">
-			<Icon name="trash" />
-		</Button>
 	</div>
 
 	<!-- Who's online? -->
@@ -342,10 +358,15 @@ handlePointerMove = debounce(handlePointerMove, 5);
 		<Button
 			color="primary"
 			on:click={() => {
-				regions.push({
-					name: regionNameNew,
-					locus: igv.get("locus")
-				});
+				const region = regions.find((r) => r.locus === igv.get("locus"));
+				if (region) {
+					region.name = regionNameNew;
+				} else {
+					regions.push({
+						name: regionNameNew,
+						locus: igv.get("locus")
+					});
+				}
 				regions = regions;
 				multiplayer.broadcast("app", {
 					setting: "regions",
