@@ -27,7 +27,7 @@ import { IGV } from "$lib/igv";
 export let channel;
 export let config;
 export let name;
-export let comments;
+export let regions;
 
 // Screen state
 let clicked; // If true, shows click animation at position clicked.x/y
@@ -47,13 +47,18 @@ let locus = config.locus;
 
 // Modals
 let nameNew = name;
+let isOpenRenameRoom;
+let toggleRenameRoom = () => (isOpenRenameRoom = !isOpenRenameRoom);
+
 let newTrackUrl = "";
 let newTrackUrlIndex = "";
 let newTrackName = "My New Track";
-let toggleRenameRoom = () => (isOpenRenameRoom = !isOpenRenameRoom);
-let isOpenRenameRoom;
-let toggleImportURL = () => (isOpenImportURL = !isOpenImportURL);
 let isOpenImportURL;
+let toggleImportURL = () => (isOpenImportURL = !isOpenImportURL);
+
+let regionNameNew = "";
+let isOpenNameRegion;
+let toggleNameRegion = () => (isOpenNameRegion = !isOpenNameRegion);
 
 // On first load
 onMount(async () => {
@@ -80,12 +85,12 @@ onMount(async () => {
 		multiplayer,
 		div: thisIGV,
 		onAppPayload: (payload) => {
-			if(payload.setting === "locus") {
+			if (payload.setting === "locus") {
 				locus = payload.value;
 			} else if (payload.setting === "name") {
 				name = payload.value;
-			} else if(payload.setting === "comments") {
-				comments = payload.value;
+			} else if (payload.setting === "regions") {
+				regions = payload.value;
 			}
 		}
 	});
@@ -104,6 +109,7 @@ onMount(async () => {
 async function syncIGVState() {
 	const newState = JSON.stringify({
 		name,
+		regions,
 		config: igv.toJSON()
 	});
 	if (!loading && isTheSyncUser && newState && igvState !== newState) {
@@ -192,6 +198,30 @@ handlePointerMove = debounce(handlePointerMove, 5);
 				>
 			</DropdownMenu>
 		</ButtonDropdown>
+	</div>
+
+	<!-- Regions -->
+	<div class="me-auto">
+		<Button
+			disabled={loading}
+			color="outline-primary"
+			on:click={toggleNameRegion}>Save Region</Button
+		>
+
+		<ButtonDropdown>
+			<DropdownToggle color="outline-primary" caret>Saved regions</DropdownToggle>
+			<DropdownMenu>
+				{#each regions as region}
+					<DropdownItem on:click={() => igv.set("locus", region.locus)}>
+						<strong>{region.name}</strong>: <code>{region.locus}</code>
+					</DropdownItem>
+				{/each}
+			</DropdownMenu>
+		</ButtonDropdown>
+
+		<Button disabled={loading} color="outline-secondary">
+			<Icon name="trash" />
+		</Button>
 	</div>
 
 	<!-- Who's online? -->
@@ -299,6 +329,32 @@ handlePointerMove = debounce(handlePointerMove, 5);
 			}}>Save</Button
 		>
 		<Button color="secondary" on:click={toggleImportURL}>Cancel</Button>
+	</ModalFooter>
+</Modal>
+
+<!-- Modal to name the region -->
+<Modal isOpen={isOpenNameRegion} toggle={toggleNameRegion}>
+	<ModalHeader toggle={toggleNameRegion}>Name this region</ModalHeader>
+	<ModalBody>
+		<Input type="text" bind:value={regionNameNew} />
+	</ModalBody>
+	<ModalFooter>
+		<Button
+			color="primary"
+			on:click={() => {
+				regions.push({
+					name: regionNameNew,
+					locus: igv.get("locus")
+				});
+				regions = regions;
+				multiplayer.broadcast("app", {
+					setting: "regions",
+					value: regions
+				});
+				toggleNameRegion();
+			}}>Save</Button
+		>
+		<Button color="secondary" on:click={toggleNameRegion}>Cancel</Button>
 	</ModalFooter>
 </Modal>
 
