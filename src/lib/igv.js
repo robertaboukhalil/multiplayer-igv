@@ -221,8 +221,8 @@ export class IGV {
 // Reference genomes (Source: https://s3.amazonaws.com/igv.org.genomes/genomes.json)
 // jq '.[] | { (.id): { name: .name}}' genomes.json | jq -s '.'
 export const IGV_GENOMES = {
-	hg38: { name: "Human: GRCh38 (hg38)" },
 	hg19: { name: "Human: GRCh37 (hg19)" },
+	hg38: { name: "Human: GRCh38 (hg38)" },
 	"chm13v2.0": { name: "Human: T2T CHM13 v2.0" },
 	"chm13v1.1": { name: "Human: T2T CHM13 v1.1" },
 	mm39: { name: "Mouse: GRCm39/mm39" },

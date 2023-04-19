@@ -16,7 +16,7 @@ import {
 	Spinner
 } from "sveltestrap";
 import { debounce } from "debounce";
-import { generateUsername } from "unique-username-generator";
+import { generateUsername } from "username-generator";
 import { browser } from "$app/environment";
 import Cursor from "$components/Cursor.svelte";
 import Profile from "$components/Profile.svelte";
@@ -65,11 +65,12 @@ onMount(async () => {
 	if (!browser || !thisScreen) return;
 
 	// Initialize Multiplayer logic
+	const username = generateUsername(" ");
 	multiplayer = new Multiplayer({
 		channel,
 		screen: thisScreen,
 		client: supabaseAnon,
-		user: generateUsername(" "),
+		user: `${username.split(" ")[1]} ${username.split(" ")[0]}`,
 		onClick: (c) => (clicked = c),
 		onUpdateCursors: (cursors) => (usersCursors = cursors),
 		onUpdateUsers: (list) => {
