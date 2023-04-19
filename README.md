@@ -1,6 +1,10 @@
 # Multiplayer IGV
 
-Work in progress.
+Adds real-time collaboration to an IGV.js view, with share links and saved annotations.
+
+## Demo
+
+Test it out at https://igv.sandbox.bio/.
 
 ## Development
 
@@ -25,7 +29,17 @@ Make sure you use the **anonymous** key for `PUBLIC_SUPABASE_KEY_ANON` since it 
 
 ### Cloudflare config (skip for local dev)
 
-    TODO
+In your Cloudflare account's dashboard, set up Cloudflare Pages. In the form:
+
+1. Connect your fork of this repo so that it gets deployed every time you push to `main`
+2. For build settings, choose the Svelte Kit preset
+3. For environment variables, set:
+```
+NODE_VERSION=16
+PUBLIC_SUPABASE_URL = "https://YOUR_SUPABASE_PROJECT_ID.supabase.co"
+PUBLIC_SUPABASE_KEY_ANON = "YOUR_SUPABASE_ANON_KEY"
+SUPABASE_KEY_ADMIN = "YOUR_SUPABASE_ADMIN_KEY" # Make sure to click the encrypt icon for this one
+```
 
 ### Launch web server (local dev)
 
