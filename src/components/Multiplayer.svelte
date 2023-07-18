@@ -15,7 +15,6 @@ import {
 	ModalHeader,
 	Spinner
 } from "sveltestrap";
-import { debounce } from "debounce";
 import { generateUsername } from "username-generator";
 import { browser } from "$app/environment";
 import Cursor from "$components/Cursor.svelte";
@@ -133,8 +132,6 @@ function handlePointerLeave(e) {
 function handlePointerMove(e) {
 	multiplayer.broadcastPointerMove(e);
 }
-
-handlePointerMove = debounce(handlePointerMove, 5);
 </script>
 
 <h4>

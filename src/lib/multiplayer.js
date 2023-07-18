@@ -2,10 +2,13 @@ import hash from "string-hash";
 import { nanoid } from "nanoid";
 
 const SUPABASE_REALTIME_STATUS_SUBSCRIBED = "SUBSCRIBED";
+const MESSAGE_EVENT_CURSOR = "cursor";
 
 export class Multiplayer {
 	usersOnline = {}; // Users that are still connected, e.g. {"uuid": {"name": "bla"}}
 	usersCursors = {}; // All cursor positions
+	queue = []; // message queue
+	lastTimeSentCursor; // rate limit sending cursor
 
 	constructor(params) {
 		// Set up params
@@ -20,14 +23,35 @@ export class Multiplayer {
 			name: params.user
 		};
 
+		// Get ready to process queue of messages to send
+		this.broadcastQueue();
+
 		// Set up WebSocket channel
 		this.channel = this.client.channel(params.channel);
 		this.channel
 			.on("presence", { event: "sync" }, this.onSupabasePresenceSync.bind(this))
-			.on("broadcast", { event: "cursor" }, this.onSupabaseBroadcastCursor.bind(this))
+			.on("broadcast", { event: MESSAGE_EVENT_CURSOR }, this.onSupabaseBroadcastCursor.bind(this))
 			.on("broadcast", { event: "click" }, this.onSupabaseBroadcastClick.bind(this))
 			.on("broadcast", { event: "app" }, this.onSupabaseBroadcastAppEvent.bind(this))
 			.subscribe(this.onSupabaseSubscribe.bind(this));
+	}
+
+	// Process one item off the queue
+	broadcastQueue() {
+		if (this.queue.length > 0) {
+			const message = this.queue.shift();
+			this.channel
+				.send({
+					type: "broadcast",
+					event: message.event,
+					payload: { ...message.payload, id: this.me.id }
+				})
+				.then((d) => {
+					if (d !== "ok") console.warn("Broadcast error:", d);
+				});
+		}
+
+		setTimeout(() => this.broadcastQueue(), 10);
 	}
 
 	// -------------------------------------------------------------------------
@@ -81,27 +105,35 @@ export class Multiplayer {
 	// -------------------------------------------------------------------------
 
 	broadcast(event, payload) {
-		this.channel
-			.send({
-				type: "broadcast",
-				event: event,
-				payload: { ...payload, id: this.me.id }
-			})
-			.then((d) => {
-				if (d !== "ok") console.warn("Broadcast error:", d);
-			});
+		// Don't broadcast cursor updates too quickly one after the other
+		if (event === MESSAGE_EVENT_CURSOR && this.lastTimeSentCursor) {
+			const diff = new Date() - this.lastTimeSentCursor;
+			if (diff < 50) return;
+		}
+		this.lastTimeSentCursor = new Date();
+
+		this.queue.push({ event, payload, timestamp: new Date() });
+		this.queue = this.queue.sort((a, b) => {
+			if (a.event === MESSAGE_EVENT_CURSOR) {
+				return 1;
+			}
+			if (b.event === MESSAGE_EVENT_CURSOR) {
+				return -1;
+			}
+			return a.timestamp - b.timestamp;
+		});
 	}
 
 	// Broadcast updated x/y mouse coordinates
 	broadcastPointerMove(event) {
 		const position = this.getCursorPositionSend(event.clientX, event.clientY);
-		this.broadcast("cursor", { ...position, id: this.me.id });
+		this.broadcast(MESSAGE_EVENT_CURSOR, { ...position, id: this.me.id });
 	}
 
 	// Broadcast x/y coordinates to null
 	broadcastPointerLeave(event) {
 		if (event.clientX <= this.screen.clientWidth || event.clientY <= this.screen.clientHeight) return;
-		this.broadcast("cursor", { x: null, y: null, id: this.me.id });
+		this.broadcast(MESSAGE_EVENT_CURSOR, { x: null, y: null, id: this.me.id });
 	}
 
 	// Broadcast mouse click
