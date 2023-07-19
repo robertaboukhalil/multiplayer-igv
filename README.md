@@ -15,7 +15,7 @@ Test it out at https://igv.sandbox.bio/.
 
 ### Supabase config
 
-Create a `.env` file in the root folder that contains your Supabase database's **public** URL and anonymous key:
+After cloning this repo, create a `.env` file in the root folder that contains your Supabase database's **public** URL and anonymous key:
 
 ```
 PUBLIC_SUPABASE_URL = "https://YOUR_SUPABASE_PROJECT_ID.supabase.co"
